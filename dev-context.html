@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11140f">
+  <title>Pixel League · 开发上下文</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme: dark; --bg:#11140f; --ink:#eeeadc; --muted:#a1a393; --line:#353a30; --moss:#b2c686; --clay:#dd9878; --blue:#88b7c8; --mono:"DM Mono","Courier New",monospace; --sans:"Space Grotesk","Segoe UI",sans-serif; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:22px; }
+    body { margin:0; min-width:320px; color:var(--ink); background:var(--bg); font:14px/1.65 var(--sans); background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size:32px 32px; }
+    a { color:inherit; text-decoration:none; }
+    .topbar { position:sticky; top:0; z-index:10; height:62px; padding:0 5vw; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); background:rgba(17,20,15,.96); backdrop-filter:blur(12px); }
+    .brand { display:flex; align-items:center; gap:11px; font-size:12px; font-weight:700; letter-spacing:.06em; }
+    .brand-mark { width:30px; height:30px; display:grid; place-items:center; color:#14170f; background:var(--moss); border:2px solid #d8e5bc; box-shadow:3px 3px #4e6040; font:11px var(--mono); }
+    .top-links { display:flex; gap:20px; color:#c3c6b8; font:10px var(--mono); }
+    .top-links a:hover,.toc a:hover { color:var(--moss); }
+    .layout { width:min(1280px,90vw); margin:auto; display:grid; grid-template-columns:190px minmax(0,1fr); gap:48px; }
+    .toc { position:sticky; top:88px; align-self:start; padding:26px 0; }
+    .toc-label,.eyebrow { color:var(--moss); font:9px var(--mono); letter-spacing:.13em; }
+    .toc-label { margin:0 0 12px 10px; }
+    .toc a { display:block; padding:7px 10px; color:#a9ad9e; border-left:1px solid transparent; font-size:12px; }
+    .toc a:first-of-type { color:var(--ink); border-left-color:var(--moss); }
+    main { min-width:0; padding:36px 0 80px; }
+    .hero { position:relative; min-height:285px; display:grid; grid-template-columns:minmax(0,1fr) 200px; gap:24px; align-items:center; padding:30px 34px; overflow:hidden; background:linear-gradient(112deg,rgba(33,41,30,.96),rgba(26,31,24,.91) 55%,rgba(47,42,31,.9)); border:1px solid #555d45; box-shadow:7px 7px #0a0d09; }
+    .hero::after { content:""; position:absolute; inset:0; pointer-events:none; opacity:.13; background:linear-gradient(125deg,transparent 47%,#d9d8b3 47.2%,transparent 47.5%),linear-gradient(15deg,transparent 66%,#d9d8b3 66.2%,transparent 66.5%); }
+    .hero-copy,.hero-crest { position:relative; z-index:1; }
+    .hero h1 { max-width:700px; margin:12px 0; font-size:clamp(36px,5vw,58px); line-height:1.03; font-weight:600; letter-spacing:0; }
+    .hero h1 em { color:var(--clay); font-style:normal; }
+    .hero-copy p:last-of-type { max-width:600px; margin:0; color:#c4c6b9; font-size:15px; }
+    .hero-meta { display:flex; flex-wrap:wrap; gap:9px 18px; margin-top:24px; color:#a8ad9c; font:10px var(--mono); }
+    .hero-meta strong { color:var(--moss); font-weight:500; }
+    .hero-crest { display:grid; place-items:center; height:174px; background:rgba(8,11,8,.35); border:1px solid #596047; }
+    .crest-icon { width:104px; height:104px; color:#d6c886; filter:drop-shadow(4px 5px #12150f); }
+    .crest-caption { color:#a2a48e; font:9px var(--mono); letter-spacing:.08em; }
+    .stats { display:grid; grid-template-columns:repeat(4,1fr); margin:19px 0 50px; border-block:1px solid var(--line); }
+    .stat { padding:15px 12px 15px 17px; border-right:1px solid var(--line); }
+    .stat:last-child { border:0; }
+    .stat b { display:block; color:#e9dfbd; font:20px var(--mono); font-weight:400; }
+    .stat span { color:var(--muted); font-size:11px; }
+    section { margin:48px 0; }
+    .section-kicker { display:flex; align-items:center; gap:10px; margin:0 0 8px; color:var(--clay); font:9px var(--mono); letter-spacing:.12em; }
+    .section-kicker::after { content:""; width:48px; height:1px; background:#6c5b48; }
+    h2 { margin:0 0 14px; color:#eee9d8; font-size:25px; line-height:1.2; font-weight:500; letter-spacing:0; }
+    h3 { margin:0 0 8px; color:#e4deca; font-size:15px; font-weight:600; }
+    p { color:#bdc0b2; }
+    .overview { display:grid; grid-template-columns:1fr 1fr; gap:32px; align-items:start; }
+    .intro-note { max-width:560px; margin:0; font-size:14px; }
+    .feature-list { display:grid; grid-template-columns:1fr 1fr; gap:10px 20px; margin:0; padding:0; list-style:none; }
+    .feature-list li { display:flex; align-items:center; gap:9px; color:#c4c7ba; font-size:12px; }
+    .mini-icon { flex:none; width:20px; height:20px; color:var(--moss); }
+    .flow { display:grid; grid-template-columns:repeat(4,1fr); gap:0; margin-top:20px; border-block:1px solid var(--line); }
+    .flow-step { position:relative; min-height:137px; padding:16px 15px 18px; border-right:1px solid var(--line); }
+    .flow-step:last-child { border:0; }
+    .flow-num { color:#d8a17d; font:10px var(--mono); }
+    .flow-step h3 { margin:8px 0 4px; }
+    .flow-step p { margin:0; color:#aeb2a4; font-size:11px; }
+    .flow-arrow { position:absolute; z-index:1; top:55px; right:-9px; width:17px; height:17px; display:grid; place-items:center; color:#171b14; background:var(--moss); font:11px var(--mono); }
+    .architecture { width:100%; border-collapse:collapse; text-align:left; }
+    .architecture th { padding:8px 11px; color:var(--moss); border-bottom:1px solid #596148; font:9px var(--mono); font-weight:400; text-transform:uppercase; letter-spacing:.08em; }
+    .architecture td { padding:8px 11px; color:#b9bdae; border-bottom:1px solid #292e26; vertical-align:top; font-size:11px; }
+    .architecture tr:hover td { background:rgba(255,255,255,.018); }
+    code,.file { color:#ded0a1; font:11px var(--mono); }
+    .architecture td:first-child { width:190px; white-space:nowrap; }
+    .script-order { display:flex; flex-wrap:wrap; gap:6px; margin:16px 0 0; padding:0; list-style:none; counter-reset:load; }
+    .script-order li { position:relative; padding:6px 8px 6px 23px; color:#bec2b3; background:#1b2019; border:1px solid #3a4132; font:10px var(--mono); counter-increment:load; }
+    .script-order li::before { content:counter(load,decimal-leading-zero); position:absolute; left:6px; color:#94a574; font-size:8px; }
+    .split { display:grid; grid-template-columns:1fr 1fr; gap:36px; }
+    .split-block { padding-top:12px; border-top:1px solid var(--line); }
+    .split-block p { margin:0; font-size:12px; }
+    .code-sample { margin:12px 0 0; padding:14px 16px; overflow:auto; color:#d6d2c2; background:#0c0f0b; border:1px solid #30362b; font:11px/1.8 var(--mono); }
+    .callout { display:grid; grid-template-columns:32px 1fr; gap:13px; padding:18px; background:#1c2119; border-left:2px solid var(--blue); }
+    .callout svg { width:24px; height:24px; color:var(--blue); }
+    .callout p { margin:0; font-size:12px; }
+    .route-links { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    .route-links a { display:inline-flex; gap:8px; align-items:center; padding:10px 13px; color:#dbe4c6; border:1px solid #65744e; background:#232a1e; font:10px var(--mono); }
+    .route-links a:hover { background:#303a28; }
+    .route-links .secondary { color:#ddd4b9; border-color:#675e47; background:#27241d; }
+    footer { display:flex; justify-content:space-between; gap:12px; padding:20px 0; color:#858a7c; border-top:1px solid var(--line); font:9px var(--mono); }
+    @media (max-width:900px) { .layout { grid-template-columns:1fr; gap:0; } .toc { position:relative; top:auto; display:flex; gap:4px; overflow:auto; padding:12px 0 0; white-space:nowrap; } .toc-label { display:none; } .toc a { padding:6px 9px; border:1px solid var(--line); } .toc a:first-of-type { border-color:#6e8058; background:#20271d; } main { padding-top:22px; } }
+    @media (max-width:650px) { .topbar { height:56px; padding:0 5vw; } .top-links { gap:12px; font-size:9px; } .brand { font-size:10px; } .layout { width:90vw; } .hero { min-height:0; grid-template-columns:1fr; padding:23px 20px; gap:20px; } .hero h1 { font-size:42px; } .hero-crest { display:none; } .stats { grid-template-columns:1fr 1fr; margin-bottom:38px; } .stat:nth-child(2) { border-right:0; } .stat:nth-child(-n+2) { border-bottom:1px solid var(--line); } .overview,.split { grid-template-columns:1fr; gap:20px; } .feature-list { gap:8px; } .flow { grid-template-columns:1fr 1fr; } .flow-step:nth-child(2) { border-right:0; } .flow-step:nth-child(-n+2) { border-bottom:1px solid var(--line); } .flow-arrow { display:none; } .architecture th:nth-child(3),.architecture td:nth-child(3) { display:none; } .architecture td:first-child { width:auto; white-space:normal; } footer { flex-direction:column; } }
+    @media (prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="index.html"><span class="brand-mark">PL</span><span>PIXEL LEAGUE <span style="color:#9ba08f;font:9px var(--mono)">/ DEV FIELD GUIDE</span></span></a>
+    <nav class="top-links" aria-label="项目入口"><a href="index.html">打开游戏</a><a href="icons.html">SVG 图标库</a><a href="dev-context.md">Markdown 文档</a></nav>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="页面目录">
+      <p class="toc-label">FIELD INDEX</p>
+      <a href="#overview">项目概况</a><a href="#loop">游戏循环</a><a href="#modules">模块地图</a>
+      <a href="#extension">扩展入口</a><a href="#localization">本地化</a><a href="#runtime">运行与验证</a>
+    </nav>
+
+    <main>
+      <header class="hero" id="overview">
+        <div class="hero-copy">
+          <p class="eyebrow">ENGINEERING NOTES / 2.5D ACTION ROGUELIKE</p>
+          <h1>Pixel League<br><em>开发上下文</em></h1>
+          <p>一张给维护者的地图：从经典脚本加载、等距地图生成到单局推进和中英文显示，把真正的代码入口放在手边。</p>
+          <div class="hero-meta"><span><strong>RENDER</strong> Canvas + DOM</span><span><strong>BUILD</strong> None</span><span><strong>STATE</strong> Browser localStorage</span></div>
+        </div>
+        <div class="hero-crest" aria-label="游侠与弓箭图标"><svg class="crest-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#hero-ranger"></use></svg><span class="crest-caption">SILVERFIELD / FIELD NOTES 01</span></div>
+      </header>
+
+      <div class="stats" aria-label="项目规模">
+        <div class="stat"><b>44 x 44</b><span>等距地图格</span></div>
+        <div class="stat"><b>05</b><span>连续推进的区域</span></div>
+        <div class="stat"><b>18</b><span>角色等级上限</span></div>
+        <div class="stat"><b>26</b><span>游戏脚本模块（含 i18n）</span></div>
+      </div>
+
+      <section>
+        <p class="section-kicker">01 / GAME LOOP</p>
+        <h2 id="loop">单局推进</h2>
+        <p class="intro-note"><code>spawner.js</code> 拥有关卡阶段状态；玩家/敌人规则各自更新，<code>main.js</code> 汇总每帧推进。击败最终区域首领后穿过传送门获胜；阵亡后进入结算并发放局外碎片。</p>
+        <div class="flow">
+          <article class="flow-step"><span class="flow-num">01 / ENTER</span><span class="flow-arrow" aria-hidden="true">&gt;</span><h3>选英雄 · 开局</h3><p>读取局外强化，创建玩家，从第一区域开始。</p></article>
+          <article class="flow-step"><span class="flow-num">02 / SURVIVE</span><span class="flow-arrow" aria-hidden="true">&gt;</span><h3>敌潮 · 成长</h3><p>清理数波敌人，收集装备与金币；升级选择天赋并升级技能。</p></article>
+          <article class="flow-step"><span class="flow-num">03 / DEFEAT</span><span class="flow-arrow" aria-hidden="true">&gt;</span><h3>首领 · 传送门</h3><p>闪避预警技能、击败区域首领，开启前往营地的通路。</p></article>
+          <article class="flow-step"><span class="flow-num">04 / PREPARE</span><h3>营地 · 下一关</h3><p>恢复状态、购置装备并进入下一区域；最终获胜或阵亡结算。</p></article>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-kicker">02 / SYSTEM MAP</p>
+        <h2 id="modules">模块地图</h2>
+        <table class="architecture">
+          <thead><tr><th>代码区域</th><th>文件</th><th>主要职责</th></tr></thead>
+          <tbody>
+            <tr><td>引导与语言</td><td><span class="file">index.html</span> · <span class="file">js/i18n.js</span></td><td>DOM 壳层、依赖顺序、中英文词典与持久化语言偏好。</td></tr>
+            <tr><td>引擎基础</td><td><span class="file">core.js</span> · <span class="file">entity.js</span></td><td>Canvas/输入/全局状态、空间投影和单位共有状态。</td></tr>
+            <tr><td>地图与视觉</td><td><span class="file">map.js</span> · <span class="file">props.js</span> · <span class="file">sprites.js</span> · <span class="file">sprite_defs.js</span> · <span class="file">render.js</span> · <span class="file">fx.js</span></td><td>程序化场景与精灵、A* 寻路/碰撞、等距世界渲染和特效。</td></tr>
+            <tr><td>数据定义</td><td><span class="file">data_items.js</span> · <span class="file">data_talents.js</span> · <span class="file">data_enemies.js</span></td><td>装备、天赋卡、敌人/首领数值，以及阶段敌人池。</td></tr>
+            <tr><td>战斗规则</td><td><span class="file">combat.js</span> · <span class="file">player.js</span> · <span class="file">player_update.js</span> · <span class="file">enemy.js</span> · <span class="file">boss.js</span> · <span class="file">extras.js</span></td><td>伤害结算、角色状态/指令、AI、首领技能和自动施放的额外技能。</td></tr>
+            <tr><td>角色内容</td><td><span class="file">hero_kestrel.js</span> · <span class="file">hero_vela.js</span> · <span class="file">hero_aldric.js</span></td><td>三个英雄的技能、被动、成长、专属天赋和战斗事件钩子。</td></tr>
+            <tr><td>流程与显示</td><td><span class="file">spawner.js</span> · <span class="file">hud.js</span> · <span class="file">ui.js</span> · <span class="file">meta.js</span> · <span class="file">main.js</span></td><td>单局/刷怪状态机、HUD/菜单、局外强化、输入与主循环。</td></tr>
+            <tr><td>素材选择</td><td><span class="file">assets/game-icons.svg</span> · <span class="file">icons.html</span> · <span class="file">js/icon-gallery.js</span></td><td>121 个 SVG symbol、响应式图标选择器与引用复制。</td></tr>
+          </tbody>
+        </table>
+        <ol class="script-order" aria-label="脚本加载顺序">
+          <li>i18n / core</li><li>sprites / sprite_defs</li><li>props / map / fx</li><li>game data</li>
+          <li>entity / combat</li><li>heroes / player / AI</li><li>spawner / render</li><li>hud / ui / meta</li><li>main / boot</li>
+        </ol>
+      </section>
+
+      <section>
+        <p class="section-kicker">03 / CHANGE ROUTES</p>
+        <h2 id="extension">从哪里开始改</h2>
+        <div class="overview">
+          <p class="intro-note">新增英雄：复制 <code>hero_*.js</code> 配置模式、实现技能/被动钩子，再在 <code>index.html</code> 注册脚本并加入 <code>HEROES</code>。<br><br>新增物品/天赋/敌人：分别改 <code>data_items.js</code>、<code>data_talents.js</code>、<code>data_enemies.js</code>；加敌人 key 到 <code>STAGES[].pool</code> 才会出现在相应区域。<br><br>修改伤害：以 <code>combat.js</code> 的 <code>dealDamage()</code> 为集中入口，注意护甲/魔抗、护盾、被动、暴击与击杀钩子顺序。</p>
+          <ul class="feature-list">
+            <li><svg class="mini-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#weapon-long-sword"></use></svg>英雄技能 / 三个 hero 模块</li>
+            <li><svg class="mini-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#resource-treasure-chest"></use></svg>掉落规则 / data_items</li>
+            <li><svg class="mini-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#magic-earth-rune"></use></svg>升级选择 / data_talents</li>
+            <li><svg class="mini-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#monster-murk-wolf"></use></svg>关卡内容 / data_enemies</li>
+            <li><svg class="mini-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#ui-world-map"></use></svg>路径/碰撞 / map.js</li>
+            <li><svg class="mini-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#ui-inventory-bag"></use></svg>界面行为 / hud.js / ui.js</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <p class="section-kicker">04 / LOCALES</p>
+        <h2 id="localization">i18n 接入方式</h2>
+        <div class="split">
+          <div class="split-block"><h3>显示边界统一翻译</h3><p><code>screen()</code> 通过临时 DOM 翻译菜单文本和 <code>data-tip</code>；HUD 的 <code>setText()</code> / <code>setHTML()</code>、tooltip、banner 与 Canvas 飘字各自通过 <code>I18N</code> 显示。带数字的动态短句使用规则匹配，战斗和存档数据维持原有英文键和数值。</p></div>
+          <div class="split-block"><h3>保存独立、切换可往返</h3><p>语言记在 <code>pixelLeague.locale.v1</code>，与 <code>pixelLeague.meta.v1</code> 的局外成长分开。菜单保留原始模板以便切回英文；HUD 作缓存失效后重绘。新增玩家可读文案时同步补词典和动态格式规则。</p></div>
+        </div>
+        <pre class="code-sample"><code>// Localize display text without changing gameplay data
+ element.textContent = I18N.t(sourceText);
+ element.innerHTML = I18N.html(sourceMarkup);</code></pre>
+      </section>
+
+      <section>
+        <p class="section-kicker">05 / RUNBOOK</p>
+        <h2 id="runtime">运行与验证</h2>
+        <div class="callout"><svg viewBox="0 0 32 32"><use href="assets/game-icons.svg#ui-compass"></use></svg><p>直接用浏览器打开 <code>index.html</code>，项目没有包安装、构建或服务器前置条件。局内地图随机生成；验证需要实际操作游玩路径，而非比对固定地图截图。</p></div>
+        <div class="split" style="margin-top:16px">
+          <div class="split-block"><h3>语法检查</h3><p>可运行 <code>node --check js/i18n.js</code>，也可对修改的经典脚本逐个使用同一命令。当前仓库没有自动化测试、lint 或构建脚本。</p></div>
+          <div class="split-block"><h3>关键手测路径</h3><p>刷新后确认语言偏好；中英来回切换；打开英雄技能提示；进入游戏检查阶段 HUD、等级/天赋、拾取物品、营地、暂停与结算。确认局外强化仍保持原值。</p></div>
+        </div>
+        <div class="route-links"><a href="index.html">打开 Pixel League</a><a class="secondary" href="icons.html">挑选 SVG 游戏图标</a><a class="secondary" href="dev-context.md">完整 Markdown 上下文</a></div>
+      </section>
+
+      <footer><span>PIXEL LEAGUE / DEVELOPMENT CONTEXT</span><span>25 original runtime scripts + i18n</span></footer>
+    </main>
+  </div>
+</body>
+</html>

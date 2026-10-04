@@ -1,8 +1,8 @@
 'use strict';
 // ---------- Full-screen UI: title, hero select, talent cards, camp, pause, results, armory ----------
-const UI = { cards: null, onCardsDone: null, shop: [], ended: false };
+const UI = { cards: null, onCardsDone: null, shop: [], ended: false, html: '', screenClass: '' };
 function screen(html, cls = '') {
-  const s = $('screen'); s.className = cls; s.innerHTML = html; hideTip();
+  const s = $('screen'); UI.html = html; UI.screenClass = cls; s.className = cls; s.innerHTML = I18N.html(html); hideTip();
   s.querySelectorAll('[data-act]').forEach(b => b.addEventListener('click', e => { e.stopPropagation(); UI_ACT[b.dataset.act](b.dataset.arg, b); }));
   s.querySelectorAll('[data-tip]').forEach(b => bindTip(b, () => b.dataset.tip));
   return s;
@@ -179,3 +179,12 @@ function uiKey(e) {
   else if (st === 'title' && e.code === 'Enter') showSelect();
   else if ((st === 'select' || st === 'armory') && e.code === 'Escape') showTitle();
 }
+I18N.setOnChange(() => {
+  const s = $('screen');
+  if (!s.classList.contains('hidden') && UI.html) screen(UI.html, UI.screenClass);
+  if (HUD.bannerHTML) $('banner').innerHTML = I18N.html(HUD.bannerHTML);
+  if (HUD.el.lvl && G.player && G.player.hero) {
+    for (const el of Object.values(HUD.el)) if (el && typeof el === 'object') { el._v = undefined; el._h = undefined; }
+    HUD.acc = 1; G.hudDirty = true; updateHUD(0); refreshTip();
+  }
+});

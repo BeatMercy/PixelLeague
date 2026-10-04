@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11140f">
+  <title>Pixel League · 图标素材库</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/icon-gallery.css">
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="index.html"><span class="brand-mark">PL</span><span>PIXEL LEAGUE <small>ASSET ATELIER / 01</small></span></a>
+    <a class="back-link" href="index.html">返回游戏 <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="intro-copy">
+        <p class="eyebrow">FIELD KIT · SVG COLLECTION</p>
+        <h1 id="page-title">装备你的<br><span>下一场冒险。</span></h1>
+        <p class="lede">一套为像素地牢打造的轻量图标库。先挑一个，再把它带进游戏。</p>
+        <div class="collection-meta"><strong id="icon-count">121</strong><span>枚可缩放 SVG 图标</span><span class="meta-divider"></span><span>32 × 32 viewBox</span></div>
+      </div>
+      <div class="specimen" aria-label="精选道具图标展示">
+        <div class="specimen-top"><span>FIELD DROP</span><span>NO. 0042</span></div>
+        <svg class="specimen-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="assets/game-icons.svg#weapon-greatsword"></use></svg>
+        <div class="specimen-name">GREATSWORD <span>▲ RARE</span></div>
+        <div class="specimen-grid" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="toolbar" aria-label="图标筛选工具">
+      <label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索名称或 ID..." autocomplete="off"><kbd>/</kbd></label>
+      <div id="filters" class="filters" role="group" aria-label="按类别筛选">
+        <button class="filter active" data-category="all" type="button">全部 <span>121</span></button>
+        <button class="filter" data-category="hero" type="button">英雄</button>
+        <button class="filter" data-category="weapon" type="button">武器</button>
+        <button class="filter" data-category="armor" type="button">护甲</button>
+        <button class="filter" data-category="potion" type="button">药剂</button>
+        <button class="filter" data-category="magic" type="button">魔法</button>
+        <button class="filter" data-category="monster" type="button">怪物</button>
+        <button class="filter" data-category="resource" type="button">资源</button>
+        <button class="filter" data-category="ui" type="button">界面</button>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="图标素材浏览器">
+      <div class="results-line"><h2>全部素材 <span id="results-count">121</span></h2><div class="display-controls">
+        <label class="swatch-control">预览色 <input id="icon-color" type="color" value="#d9c887" aria-label="选择图标颜色"></label>
+        <label class="size-control">尺寸 <input id="icon-size" type="range" min="28" max="68" value="42" aria-label="调整预览图标尺寸"></label>
+        <button id="background-toggle" class="toggle" type="button" aria-pressed="false">棋盘底色</button>
+      </div></div>
+      <div id="icon-grid" class="icon-grid" aria-live="polite"></div>
+      <div id="empty-state" class="empty-state" hidden>没有找到匹配图标。</div>
+      <div class="load-more-wrap"><button id="load-more" class="load-more" type="button">继续浏览 <span aria-hidden="true">↓</span></button></div>
+    </section>
+  </main>
+
+  <footer><span>PIXEL LEAGUE / ASSET ATELIER</span><a href="assets/game-icons.svg">打开 SVG 图集 <span aria-hidden="true">↗</span></a><span>独立创作 · 可直接嵌入项目</span></footer>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="js/icon-gallery.js"></script>
+</body>
+</html>

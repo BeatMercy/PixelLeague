@@ -8,6 +8,9 @@
 html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--txt); font-family: var(--mono); font-size: 20px; user-select: none; }
 #game { position: fixed; inset: 0; width: 100vw; height: 100vh; image-rendering: pixelated; display: block; }
 .hidden { display: none !important; }
+#langToggle { position: fixed; z-index: 60; top: 10px; right: 300px; padding: 5px 10px; color: var(--gold); font: 12px var(--pix); cursor: pointer;
+  background: var(--panel); border: 2px solid var(--gold2); box-shadow: 0 0 0 2px #05060c; }
+#langToggle:hover { border-color: var(--gold); color: var(--txt); }
 b { color: var(--gold); font-weight: normal; }
 .pix { image-rendering: pixelated; }
 
@@ -208,3 +211,4 @@ h2 { font-family: var(--pix); font-size: 18px; color: var(--gold); text-shadow: 
   .ups { grid-template-columns: repeat(2, 1fr); }
   #statsPanel { display: none; }
 }
+@media (max-width: 700px) { #langToggle { top: 162px; right: 8px; } }

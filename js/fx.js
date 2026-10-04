@@ -7,7 +7,8 @@ function burst(x, y, col, n = 8, spd = 2, z = 6, life = 0.5) {
   }
 }
 function ftext(x, y, text, col = '#fff', big = false) {
-  G.texts.push({ x: x + rand(-0.2, 0.2), y, z: 22, text: String(text), col, life: big ? 1.1 : 0.8, max: big ? 1.1 : 0.8, big });
+  const sourceText = String(text);
+  G.texts.push({ x: x + rand(-0.2, 0.2), y, z: 22, text: sourceText, sourceText, col, life: big ? 1.1 : 0.8, max: big ? 1.1 : 0.8, big });
 }
 function addFx(o) { o.max = o.life; G.fx.push(o); return o; }
 const ringFx = (x, y, r, col, life = 0.35) => addFx({ type: 'ring', x, y, r, col, life });
@@ -74,8 +75,9 @@ function drawTexts() {
     sctx.font = `${Math.round(sz) * 2}px VT323, monospace`;
     sctx.globalAlpha = Math.min(1, a * 2.5);
     const x = toVX(t.x, t.y) * SCALE, y = toVY(t.x, t.y, t.z) * SCALE;
-    sctx.fillStyle = '#000'; sctx.fillText(t.text, x + 2, y + 2);
-    sctx.fillStyle = t.col; sctx.fillText(t.text, x, y);
+    const text = I18N.t(t.sourceText || t.text);
+    sctx.fillStyle = '#000'; sctx.fillText(text, x + 2, y + 2);
+    sctx.fillStyle = t.col; sctx.fillText(text, x, y);
   }
   sctx.globalAlpha = 1;
 }

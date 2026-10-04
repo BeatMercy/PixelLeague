@@ -1,10 +1,10 @@
 'use strict';
 // ---------- HUD: skill bar, bars, inventory, minimap, tooltips, banner ----------
 const $ = id => document.getElementById(id);
-const HUD = { el: {}, slots: {}, acc: 0, tipAcc: 0, bannerT: 0, invSig: '', exSig: '' };
+const HUD = { el: {}, slots: {}, acc: 0, tipAcc: 0, bannerT: 0, invSig: '', exSig: '', bannerHTML: '' };
 function showHUD(on) { $('hud').classList.toggle('hidden', !on); hideTip(); }
-function setText(el, v) { v = String(v); if (el._v !== v) { el._v = v; el.textContent = v; } }
-function setHTML(el, v) { if (el._h !== v) { el._h = v; el.innerHTML = v; } }
+function setText(el, v) { v = I18N.t(v); if (el._v !== v) { el._v = v; el.textContent = v; } }
+function setHTML(el, v) { v = I18N.html(v); if (el._h !== v) { el._h = v; el.innerHTML = v; } }
 
 // ---- tooltip ----
 let tipFn = null;
@@ -15,7 +15,7 @@ function placeTip(cx, cy) {
 }
 function showTip(html, cx, cy) {
   const t = $('tooltip'); if (!html) return hideTip();
-  t.innerHTML = html; t.classList.remove('hidden'); placeTip(cx, cy);
+  t.innerHTML = I18N.html(html); t.classList.remove('hidden'); placeTip(cx, cy);
 }
 function hideTip() { $('tooltip').classList.add('hidden'); tipFn = null; }
 function bindTip(el, fn) {
@@ -152,7 +152,8 @@ function updateHUD(dt) {
   }
 }
 function banner(title, sub = '', col = '#ffe8a0') {
-  const b = $('banner'); b.innerHTML = `<div class="bt" style="color:${col}">${title}</div>` + (sub ? `<div class="bs">${sub}</div>` : '');
+  const b = $('banner'); HUD.bannerHTML = `<div class="bt" style="color:${col}">${title}</div>` + (sub ? `<div class="bs">${sub}</div>` : '');
+  b.innerHTML = I18N.html(HUD.bannerHTML);
   b.classList.remove('show'); void b.offsetWidth; b.classList.add('show'); HUD.bannerT = 3.2;
 }
 

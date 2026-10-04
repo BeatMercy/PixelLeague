@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11140f">
+  <title>Pixel League · 下一位英雄</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root { color-scheme:dark; --bg:#11140f; --panel:#191d17; --raised:#232920; --line:#373d31; --ink:#eeeadd; --muted:#a3a596; --moss:#b7ca88; --amber:#e4ba68; --coral:#d98970; --blue:#83b8c5; --mono:"DM Mono","Courier New",monospace; --sans:"Space Grotesk","Segoe UI",sans-serif; }
+    * { box-sizing:border-box; }
+    html { min-width:320px; scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background-color:var(--bg); font:14px/1.5 var(--sans); background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px); background-size:32px 32px; }
+    a { color:inherit; text-decoration:none; }
+    button,input { font:inherit; }
+    button { color:inherit; }
+    .top { height:60px; padding:0 max(5vw,20px); position:sticky; top:0; z-index:5; display:flex; align-items:center; justify-content:space-between; background:rgba(17,20,15,.95); border-bottom:1px solid var(--line); backdrop-filter:blur(12px); }
+    .brand { display:flex; align-items:center; gap:11px; font-size:11px; font-weight:700; letter-spacing:.06em; }
+    .brand-mark { width:30px; height:30px; display:grid; place-items:center; color:#14170f; background:var(--moss); border:2px solid #dce8c4; box-shadow:3px 3px #536345; font:10px var(--mono); }
+    .nav-links { display:flex; gap:19px; color:#c5c7b8; font:10px var(--mono); }
+    .nav-links a:hover { color:var(--moss); }
+    main { width:min(1280px,90vw); margin:auto; }
+    .mast { min-height:260px; display:grid; grid-template-columns:minmax(0,1fr) 275px; align-items:center; gap:56px; padding:40px 0 33px; border-bottom:1px solid var(--line); }
+    .eyebrow { margin:0 0 14px; color:var(--moss); font:9px var(--mono); letter-spacing:.13em; }
+    h1 { margin:0; font-size:clamp(40px,5.4vw,65px); line-height:1; font-weight:600; letter-spacing:0; }
+    h1 em { color:var(--coral); font-style:normal; }
+    .intro { max-width:650px; margin:15px 0 0; color:#b7bbad; font-size:14px; }
+    .brief { display:flex; gap:15px; margin-top:20px; color:var(--muted); font:10px var(--mono); }
+    .brief strong { color:var(--amber); font-weight:500; }
+    .spotlight { height:184px; position:relative; display:grid; place-items:center; overflow:hidden; background:linear-gradient(135deg,#2a3022,#1a201a 62%,#25291f); border:1px solid #596047; box-shadow:7px 7px #090c08; }
+    .spotlight::before,.spotlight::after { content:""; position:absolute; width:235px; height:1px; background:#99a87850; transform:rotate(-35deg); }
+    .spotlight::before { top:43px; left:-42px; }
+    .spotlight::after { right:-45px; bottom:48px; transform:rotate(28deg); }
+    .spotlight-icon { width:92px; height:92px; z-index:1; color:#d8c27f; filter:drop-shadow(4px 5px #0a0d09); }
+    .spotlight-label { position:absolute; z-index:2; inset:auto 12px 10px; display:flex; justify-content:space-between; color:#b6b9a8; font:8px var(--mono); letter-spacing:.08em; }
+    .toolbar { display:grid; grid-template-columns:minmax(210px,280px) 1fr; align-items:center; gap:18px; padding:17px 0; border-bottom:1px solid var(--line); }
+    .search { height:38px; display:flex; align-items:center; gap:9px; padding:0 10px; color:#adb19f; background:var(--panel); border:1px solid #444b3c; }
+    .search:focus-within { border-color:var(--moss); }
+    .search-mark { color:var(--amber); font:19px var(--mono); }
+    .search input { width:100%; border:0; outline:0; color:var(--ink); background:transparent; font-size:12px; }
+    .search input::placeholder { color:#898f7f; }
+    .filters { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:5px; }
+    .filter { padding:7px 10px; cursor:pointer; color:#b6baab; background:transparent; border:1px solid transparent; font-size:11px; }
+    .filter:hover { color:var(--ink); }
+    .filter.active { color:#e1eacb; background:#293021; border-color:#65734f; }
+    .inventory-bar { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 0 11px; }
+    .inventory-bar h2 { margin:0; color:#e2e0d2; font:11px var(--mono); }
+    .inventory-bar h2 span { color:var(--moss); }
+    .shortlist { display:flex; align-items:center; gap:7px; color:var(--muted); font:9px var(--mono); }
+    .candidate-chip { display:inline-flex; align-items:center; gap:5px; padding:4px 7px; color:#e0e8ce; background:#262d20; border:1px solid #4e5e3e; font:9px var(--mono); }
+    .candidate-chip button { width:17px; height:17px; padding:0; cursor:pointer; color:#d2a583; background:none; border:0; }
+    .hero-grid { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:9px; }
+    .hero-card { min-width:0; min-height:218px; position:relative; display:flex; flex-direction:column; align-items:stretch; padding:13px; background:rgba(25,29,23,.96); border:1px solid #363c31; transition:background .15s,border-color .15s,transform .15s; animation:card-in .28s both; animation-delay:calc(var(--index,0) * 18ms); }
+    .hero-card:hover,.hero-card.active { background:#21281f; border-color:var(--accent,#859568); transform:translateY(-2px); }
+    .card-top { display:flex; justify-content:space-between; align-items:center; gap:5px; }
+    .card-index { color:#8c927f; font:9px var(--mono); }
+    .role-mark { padding:3px 5px; color:var(--accent,#c2c69d); background:#292e24; border:1px solid #414838; font:8px var(--mono); white-space:nowrap; }
+    .hero-art { width:48px; height:48px; margin:13px 0 8px; color:var(--accent,#d4c280); filter:drop-shadow(2px 2px #080a07); }
+    .hero-name { margin:0; font-size:17px; line-height:1.2; font-weight:600; }
+    .anchor { min-height:28px; margin:5px 0 10px; color:#9da392; font-size:10px; }
+    .card-meta { display:flex; justify-content:space-between; gap:5px; margin-top:auto; padding-top:9px; border-top:1px solid #33392e; color:#b5b9a9; font:8px var(--mono); }
+    .card-actions { display:grid; grid-template-columns:1fr auto; gap:6px; margin-top:9px; }
+    .open-detail,.pick { min-height:29px; padding:5px 8px; cursor:pointer; color:#d9dfca; background:#293021; border:1px solid #566448; font-size:10px; }
+    .open-detail:hover,.pick:hover { background:#343e29; }
+    .pick { width:32px; padding:4px; color:var(--amber); font:14px var(--mono); }
+    .pick.selected { color:#172015; background:var(--moss); border-color:#e0e9cb; }
+    .empty { padding:40px; color:var(--muted); text-align:center; font:11px var(--mono); }
+    .detail { margin:28px 0 42px; border-top:1px solid var(--line); border-bottom:1px solid var(--line); scroll-margin-top:75px; }
+    .detail-head { display:grid; grid-template-columns:68px 1fr auto; align-items:center; gap:16px; padding:19px 0; border-bottom:1px solid var(--line); }
+    .detail-icon { width:58px; height:58px; color:var(--accent,#d4c280); }
+    .detail-kicker { margin:0 0 3px; color:var(--moss); font:9px var(--mono); letter-spacing:.08em; }
+    .detail-title { margin:0; font-size:24px; line-height:1.15; font-weight:500; }
+    .detail-sub { margin:4px 0 0; color:#aeb2a3; font-size:11px; }
+    .detail-pick { padding:9px 12px; cursor:pointer; color:#182016; background:var(--moss); border:1px solid #dce8bf; font:10px var(--mono); }
+    .detail-pick.selected { color:#f0dfb6; background:#302c1e; border-color:#8d7449; }
+    .detail-body { display:grid; grid-template-columns:1fr 1.35fr; gap:35px; padding:20px 0 22px; }
+    .concept-label { margin:0 0 7px; color:var(--coral); font:9px var(--mono); letter-spacing:.08em; }
+    .concept-copy { margin:0 0 15px; color:#c5c7b9; font-size:12px; }
+    .loop { padding-top:12px; border-top:1px solid var(--line); }
+    .skill-list { display:grid; grid-template-columns:1fr 1fr; gap:10px 15px; margin:0; padding:0; list-style:none; }
+    .skill { padding-left:10px; border-left:2px solid var(--accent,#879965); }
+    .skill b { display:block; color:#e2d3a3; font:10px var(--mono); font-weight:500; }
+    .skill span { display:block; margin-top:3px; color:#c0c3b5; font-size:11px; }
+    .talents { display:flex; flex-wrap:wrap; gap:6px; margin-top:15px; }
+    .talent { padding:5px 7px; color:#d4d7c9; background:#23281f; border:1px solid #42493a; font-size:9px; }
+    .planner { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:20px 0 36px; border-top:1px solid var(--line); }
+    .planner p { margin:0; color:var(--muted); font-size:11px; }
+    .planner-actions { display:flex; gap:8px; }
+    .planner-actions button { padding:9px 12px; cursor:pointer; color:#dce6c8; background:#252c20; border:1px solid #63734d; font:9px var(--mono); }
+    .planner-actions button:hover { background:#303a28; }
+    .planner-actions .clear { color:#d8a190; background:transparent; border-color:#685047; }
+    .toast { position:fixed; z-index:10; left:50%; bottom:22px; padding:10px 15px; color:#e8ecd9; background:#2e3928; border:1px solid #81956b; font:10px var(--mono); opacity:0; transform:translate(-50%,10px); pointer-events:none; transition:opacity .16s,transform .16s; }
+    .toast.show { opacity:1; transform:translate(-50%,0); }
+    footer { display:flex; justify-content:space-between; gap:12px; padding:15px 0 22px; color:#868b7d; border-top:1px solid var(--line); font:8px var(--mono); }
+    @keyframes card-in { from { opacity:0; transform:translateY(7px); } to { opacity:1; transform:translateY(0); } }
+    @media (max-width:1050px) { .hero-grid { grid-template-columns:repeat(4,minmax(0,1fr)); } .mast { gap:30px; } }
+    @media (max-width:760px) { .top { padding:0 5vw; } .nav-links { gap:10px; font-size:9px; } main { width:90vw; } .mast { grid-template-columns:1fr 180px; gap:20px; } .spotlight { height:155px; } .toolbar { grid-template-columns:1fr; gap:10px; } .filters { justify-content:flex-start; } .hero-grid { grid-template-columns:repeat(3,minmax(0,1fr)); } .detail-body { grid-template-columns:1fr; gap:12px; } }
+    @media (max-width:520px) { .top { height:54px; } .brand { font-size:9px; } .brand-mark { width:27px; height:27px; } .nav-links { gap:8px; font-size:8px; } .mast { grid-template-columns:1fr; padding:32px 0 24px; } h1 { font-size:46px; } .spotlight { display:none; } .brief { flex-wrap:wrap; gap:8px 14px; } .inventory-bar { align-items:flex-start; flex-direction:column; gap:10px; } .hero-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:7px; } .hero-card { min-height:210px; padding:11px; } .hero-name { font-size:15px; } .detail-head { grid-template-columns:48px 1fr; gap:12px; } .detail-icon { width:44px; height:44px; } .detail-title { font-size:20px; } .detail-pick { grid-column:2; justify-self:start; } .skill-list { gap:10px; } .planner { align-items:flex-start; flex-direction:column; } .planner-actions { width:100%; } .planner-actions button { flex:1; } footer { flex-direction:column; } }
+    @media (prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="index.html"><span class="brand-mark">PL</span><span>PIXEL LEAGUE / CHARACTER LAB</span></a>
+    <nav class="nav-links" aria-label="项目入口"><a href="index.html">返回游戏</a><a href="dev-context.html">项目地图</a><a href="icons.html">图标库</a></nav>
+  </header>
+
+  <main>
+    <section class="mast" aria-labelledby="page-title">
+      <div>
+        <p class="eyebrow">NEXT ROSTER / CONCEPT SELECTION</p>
+        <h1 id="page-title">下一位<br><em>是谁？</em></h1>
+        <p class="intro">10 个原创角色方向，围绕现有的 18 级成长、Q/W/E/R 技能和专属天赋构思。挑几个进入短名单，再把摘要复制进策划讨论。</p>
+        <div class="brief"><span><strong>10</strong> 个蓝本</span><span><strong>4</strong> 个灵感锚点</span><span><strong>3</strong> 个候选位</span><span>点击卡片查看完整机制</span></div>
+      </div>
+      <aside class="spotlight" aria-label="候选角色剪影展示">
+        <svg class="spotlight-icon" viewBox="0 0 32 32"><use href="assets/game-icons.svg#weapon-twin-daggers"></use></svg>
+        <div class="spotlight-label"><span>ROSTER STUDY / 01</span><span>Q W E R</span></div>
+      </aside>
+    </section>
+
+    <section class="toolbar" aria-label="角色搜索与筛选">
+      <label class="search"><span class="search-mark" aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索角色、玩法或定位" autocomplete="off"><span aria-hidden="true">/</span></label>
+      <div id="filters" class="filters" role="group" aria-label="按定位筛选">
+        <button class="filter active" type="button" data-filter="all">全部</button>
+        <button class="filter" type="button" data-filter="ranged">远程</button>
+        <button class="filter" type="button" data-filter="melee">近战</button>
+        <button class="filter" type="button" data-filter="tank">前排</button>
+        <button class="filter" type="button" data-filter="caster">法术</button>
+      </div>
+    </section>
+
+    <section class="inventory-bar" aria-label="角色候选名单">
+      <h2>候选角色 <span id="visible-count">10</span></h2>
+      <div id="shortlist" class="shortlist"><span>我的短名单</span><span id="shortlist-count">0 / 3</span></div>
+    </section>
+    <section id="hero-grid" class="hero-grid" aria-label="十个角色蓝本"></section>
+    <p id="empty" class="empty" hidden>没有匹配的角色蓝本。</p>
+
+    <section id="detail" class="detail" aria-live="polite"></section>
+
+    <section class="planner" aria-label="候选方案操作">
+      <p id="planner-copy">从短名单里比较战斗循环、操作压力和队伍空位。</p>
+      <div class="planner-actions">
+        <button id="copy-plan" type="button">复制短名单</button>
+        <button id="clear-plan" class="clear" type="button">清空选择</button>
+      </div>
+    </section>
+    <footer><span>PIXEL LEAGUE / CHARACTER LAB</span><span>方案只保存在本机浏览器，不会改动游戏内容。</span></footer>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    'use strict';
+    const BLUEPRINTS = [
+      { id:'gloamshot', name:'曜弹游侠', anchor:'灵感方向：圣枪游侠 / 双枪射手', role:'远程射手', type:'ranged', icon:'hero-ranger', color:'#d7ba72', tags:['远程','普攻','标记'], difficulty:'中', fantasy:'把弹药管理与精准点杀做成一套短循环：先布置弹道，再用侧移找安全角度，最后消耗标记打出爆发。', loop:'普攻积攒双枪节奏 > Q 标记 > E 换位拉开 > W/R 消耗标记与弹药。', passive:'连续攻击累积「双响」；命中被标记目标时消耗层数，附加物理伤害并返还少量弹药。', skills:[['Q','穿甲曳光','射出贯穿弹，命中首个目标后标记其短时间易伤。'],['W','交叉火网','向扇形区域倾泻弹药；命中已标记敌人时延长标记。'],['E','反冲侧移','向鼠标方向短距离翻滚，下一次普攻获得射程与攻速。'],['R','终局弹幕','锁定最近的精英/首领连续射击；优先攻击易伤目标。']], talents:['双响回膛：标记目标被击败时返还一轮弹药','弹道折射：Q 命中后分裂两枚低伤子弹','冷静瞄准：静止时逐渐提高暴击率'], fit:'补足现有远程普攻位；中距离、持续输出与走位。', roles:['ranged'] },
+      { id:'basalt', name:'磐岳巨灵', anchor:'灵感方向：石头人 / 山岳坦克', role:'近战坦克', type:'tank', icon:'monster-petricite-golem', color:'#91a7a1', tags:['近战','前排','护盾'], difficulty:'低', fantasy:'用承伤换取反击资源。越靠近敌潮中心越能吸收冲击，攒满岩势后打一轮大范围破阵。', loop:'W 聚岩承伤 > E 震开近身敌人 > Q 追击落单者 > R 冲入密集区域开团。', passive:'受击积累岩势；短时间未受伤时将岩势转成护盾。护盾破裂会对周围敌人造成小额魔法伤害。', skills:[['Q','山脊投石','向目标方向推出岩块，对路径敌人造成伤害并略微减速。'],['W','玄岩壁垒','获得随已损生命加成的护盾；护盾持续期间减免部分远程伤害。'],['E','地脉震击','重击地面，对身边敌人造成伤害；岩势越高范围越大。'],['R','陨峰冲阵','短暂蓄力后冲向指定点，落地击退并短暂眩晕中心敌人。']], talents:['层岩叠甲：护盾结束时留下减速地带','回声山谷：E 命中精英返还部分冷却','巨像核心：R 落点生成可吸收一次伤害的岩障'], fit:'当前缺少纯前排；技能易读、容错高，适合作为首个坦克。', roles:['melee','tank'] },
+      { id:'threadblade', name:'折锋舞者', anchor:'灵感方向：艾瑞利亚 / 刃舞决斗', role:'近战斗士', type:'melee', icon:'weapon-twin-daggers', color:'#c69ba9', tags:['近战','连段','追击'], difficulty:'高', fantasy:'围绕「刃片」标记组织位移连段。命中不同目标刷新进场机会；错失节奏则要靠走位等待下一轮。', loop:'Q 触发刃片追击 > 普攻叠势 > W 格挡关键伤害 > E/R 铺设下一段进场路线。', passive:'技能命中叠加舞势；连续命中不同敌人会强化下一次突进，重复打同一目标不会刷新。', skills:[['Q','折返追刃','突进至目标旁并造成物理伤害；击败被标记敌人时返还冷却。'],['W','回锋守势','短暂减伤蓄力，结束时向前斩击；蓄力期间承受攻击会追加减速。'],['E','双点牵刃','在鼠标两侧放置刃点，连线时伤害并标记穿过的敌人。'],['R','百刃回廊','向扇面掷出刃片，命中敌人后形成短暂边界，穿越边界的敌人受伤。']], talents:['连环刃舞：Q 命中不同敌人后提高攻速','锋线回响：E 连线命中多个目标降低冷却','不息之舞：满层舞势时获得一次小护盾'], fit:'高机动近战，突出目标选择和位移路线；需谨慎处理连续刷新强度。', roles:['melee'] },
+      { id:'galeshard', name:'逐风剑客', anchor:'灵感方向：亚索 / 疾风剑客', role:'近战决斗家', type:'melee', icon:'weapon-long-sword', color:'#85bec0', tags:['近战','暴击','风场'], difficulty:'高', fantasy:'通过移动与普攻积累风势，再把风势转换成直线控制与短爆发。保持贴身但不陷入站桩是主要考验。', loop:'移动/普攻攒风 > Q 直线斩 > E 穿越目标改位 > R 追击被击飞或硬直的敌人。', passive:'移动会积累风势；满层后下一次 Q 获得更远射程并施加短硬直。暴击率提供递减收益。', skills:[['Q','弧风斩','挥出直线剑气；满风势时改为远距离风刃并短暂击退。'],['W','流风幕','展开随角色转向的风幕，短时间削弱穿过它的敌方弹道。'],['E','踏风步','穿越最近敌人并落在其另一侧；同一目标短时间内不可重复作为踏板。'],['R','追风裁决','突进到受控制目标身边，造成基于目标已损生命的物理伤害。']], talents:['余风回旋：满风 Q 命中后返还少量风势','踏风连步：E 穿越不同敌人时提高移速','无形锋线：W 结束时向前释放一道低伤风刃'], fit:'高操作上限的机动近战；击飞在现有系统中以击退/短眩晕实现。', roles:['melee'] },
+      { id:'sunlance', name:'日铸枪骑', anchor:'原创方向：长枪阵线与蓄力突刺', role:'中距离战士', type:'melee', icon:'weapon-spear', color:'#d49a6b', tags:['近战','蓄力','破甲'], difficulty:'中', fantasy:'架枪建立威胁扇区，逼敌人离开直线；蓄力越久穿透越强，但站位风险也越高。', loop:'W 架势减伤 > Q 蓄力刺击 > E 后撤调位 > R 对精英完成破甲处决。', passive:'保持朝向敌人时逐渐获得枪势；移动或被控制会消耗枪势，满层强化下一次直线技能。', skills:[['Q','日轮贯阵','蓄力后刺出长距离直线攻击；蓄力阶段提高射程与破甲。'],['W','铸盾枪架','固定短暂架势，正面减伤；期间受击积累反击枪势。'],['E','回锋步','向后撤步并刺击追近敌人，命中后短暂降低敌人移速。'],['R','落日穿星','锁定精英/首领突刺，依目标已损生命造成额外真实伤害。']], talents:['金线贯穿：Q 命中直线第二名敌人伤害提高','壁垒反刺：W 成功挡住攻击时强化 E','余晖追猎：R 击败目标时恢复生命'], fit:'中距离战士与单体破甲，支持现有移动、减伤和处决机制。', roles:['melee'] },
+      { id:'frostscribe', name:'霜律书吏', anchor:'原创方向：符文刻写与区域控制', role:'远程法师', type:'caster', icon:'weapon-enchanted-tome', color:'#88b7c5', tags:['远程','法术','控场'], difficulty:'中', fantasy:'先布置符文区域，再用直线法术触发连锁。强在控制路径，不以单发极高伤害解决所有问题。', loop:'E 铺符 > Q 引爆符线 > W 保持距离 > R 冻结密集敌潮。', passive:'技能命中带符敌人积累霜印；三层后下一次控制延长，精英/首领有持续时间上限。', skills:[['Q','冰楔书写','向目标点射出冰楔，触及霜符时产生小范围爆裂。'],['W','静界页障','在脚下展开短暂屏障，进入区域的敌人减速。'],['E','符页散布','向扇面放置数枚符页；再次施法前不会重复铺设。'],['R','霜律封卷','以自身为中心释放寒潮，对敌人造成魔法伤害与短眩晕。']], talents:['双页批注：E 符页数量增加但单页伤害降低','冻墨回流：触发三层霜印时回复法力','长冬注脚：R 半径扩大，冷却增加'], fit:'填补区域控制法师；建议首领控制抗性约束以保留挑战。', roles:['ranged','caster'] },
+      { id:'cinderfist', name:'赤炉拳宗', anchor:'原创方向：近身拳套与节奏爆发', role:'近战斗士', type:'melee', icon:'armor-gauntlet', color:'#d07d60', tags:['近战','连击','吸血'], difficulty:'中', fantasy:'轻重拳交替积攒热量。贴身持续作战收益高，但超温后必须拉开距离冷却。', loop:'普攻攒热 > Q 重拳破防 > W 吸收一次近身伤害 > E/R 消耗热量收尾。', passive:'交替进行轻击与技能命中会积累炉温；过热时伤害提高、受到伤害也提高。', skills:[['Q','炉心重击','消耗炉温打出高伤拳击；满炉温时附加短硬直。'],['W','熔甲护臂','短时间获得护盾并强化下一次近战命中回复生命。'],['E','三段追拳','连续向鼠标方向突进三次；每次命中提高下一拳伤害。'],['R','熔炉过载','清空炉温并进入数秒强化状态，期间普攻溅射但移速降低。']], talents:['淬火之拳：满温 Q 命中后降低目标护甲','余热回春：过热结束时按已造成伤害回复生命','连击传导：E 每段命中缩短技能冷却'], fit:'高贴身、强回复的斗士；暴露风险作为高伤害的代价。', roles:['melee'] },
+      { id:'hushveil', name:'暮帘游猎', anchor:'原创方向：烟幕潜行与短窗刺杀', role:'近战刺客', type:'melee', icon:'armor-ranger-hood', color:'#a6a1c3', tags:['近战','爆发','潜行'], difficulty:'高', fantasy:'先用烟幕扰乱敌人，再从边缘切入打完一轮。无隐身引擎时用短时不可选中表现需谨慎；首版建议只做移速/闪避。', loop:'E 投烟定场 > Q 切入 > 普攻触发背击加成 > W 脱离 > R 收割残血。', passive:'从敌人侧后方命中获得影袭层数；重复站在正面攻击不能触发加成。', skills:[['Q','影缝突袭','快速突进并造成物理伤害；若从侧后方命中则附加暴击率。'],['W','折光烟幕','制造短时烟幕，降低区域内敌人的命中能力并提高自身移速。'],['E','钩月回身','向鼠标方向投出弧刃，返回时再次造成较低伤害。'],['R','暮色追猎','冲向低生命敌人并造成处决伤害；未击败目标时保留较长冷却。']], talents:['无声落点：烟幕结束时获得一次短护盾','影痕扩散：E 返回路径经过的敌人被减速','猎手直觉：处决精英时延长移速增益'], fit:'单体爆发刺客；先避免真正隐身/无敌，降低实现和数值风险。', roles:['melee'] },
+      { id:'briarworks', name:'荆炉药师', anchor:'原创方向：炼剂投掷与持续灼蚀', role:'远程法师', type:'caster', icon:'potion-poison', color:'#9cbb75', tags:['远程','持续伤害','区域'], difficulty:'中', fantasy:'用不同药剂在地面留下短区域，组合伤害类型与控制。走位规划比瞄准单个高伤技能更重要。', loop:'Q 施加药剂 > E 铺扩散区 > W 脱身 > R 引燃/引爆场上药剂。', passive:'同一敌人同时受到两种药剂时触发一次调和伤害；调和有内置冷却，避免多区域爆炸叠算。', skills:[['Q','腐蚀安瓿','投掷药瓶，对小范围敌人施加持续魔法伤害。'],['W','苦雾滤器','释放环形烟雾，减速近身敌人并提高自身移速。'],['E','活性培养皿','在目标地面留下持续区域；与 Q 重叠时延长持续伤害。'],['R','赤盐催化','引燃范围内药剂区域，造成爆发伤害并清除其剩余持续时间。']], talents:['强酸配方：Q 对精英额外降低护甲','挥发缓释：E 范围扩大、持续伤害降低','安全阀：R 引爆后为自身获得护盾'], fit:'持续伤害与场地规划；需要限制同屏区域数量保护性能。', roles:['ranged','caster'] },
+      { id:'stormcaller', name:'鸣雷鼓师', anchor:'原创方向：节拍蓄能与弹跳雷击', role:'远程法师', type:'caster', icon:'magic-chain-lightning', color:'#91a9d4', tags:['远程','连锁','节奏'], difficulty:'中', fantasy:'技能命中像敲击节拍，按节奏施放逐渐拉高连锁次数。无节拍输入系统时，以技能命中计数代替。', loop:'普攻/技能攒拍 > W 选定传播目标 > Q 释放雷链 > R 消耗所有节拍打满一轮。', passive:'每次不同技能命中获得一拍；连续使用相同技能不叠层。满三拍后下一次 Q 多弹跳两次。', skills:[['Q','应雷短歌','对最近敌人释放雷击并向附近目标跳跃，按节拍提高跳数。'],['W','引弧铜鼓','标记目标数秒；期间雷击优先向它传播并造成少量易伤。'],['E','踏拍震音','以自身为中心短范围震击并减速，命中时获得一拍。'],['R','九霄合奏','消耗全部节拍进行多段落雷；对同一敌人的重复伤害递减。']], talents:['回声节拍：满拍 Q 额外回复法力','铜鼓共鸣：W 标记精英时延长持续时间','终曲余音：R 命中多个目标后缩短 E 冷却'], fit:'适合放大现有连锁闪电效果；用命中计数可避免新增节奏输入 UI。', roles:['ranged','caster'] },
+    ];
+    const STORE_KEY = 'pixelLeague.nextHeroCandidates.v1';
+    const grid = document.getElementById('hero-grid');
+    const detail = document.getElementById('detail');
+    const search = document.getElementById('search');
+    let activeFilter = 'all';
+    let activeId = BLUEPRINTS[0].id;
+    let candidates = [];
+    try { candidates = JSON.parse(localStorage.getItem(STORE_KEY) || '[]').filter(id => BLUEPRINTS.some(hero => hero.id === id)).slice(0, 3); } catch (error) { candidates = []; }
+
+    function currentList() {
+      const query = search.value.trim().toLocaleLowerCase();
+      return BLUEPRINTS.filter(hero => (activeFilter === 'all' || hero.roles.includes(activeFilter)) && (!query || `${hero.name} ${hero.anchor} ${hero.role} ${hero.tags.join(' ')} ${hero.fantasy}`.toLocaleLowerCase().includes(query)));
+    }
+    function saveCandidates() {
+      try { localStorage.setItem(STORE_KEY, JSON.stringify(candidates)); } catch (error) { /* storage blocked */ }
+    }
+    function showToast(text) {
+      const toast = document.getElementById('toast');
+      toast.textContent = text;
+      toast.classList.add('show');
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove('show'), 1600);
+    }
+    function toggleCandidate(id) {
+      if (candidates.includes(id)) candidates = candidates.filter(candidate => candidate !== id);
+      else if (candidates.length < 3) candidates.push(id);
+      else { showToast('短名单最多保留 3 个角色'); return; }
+      saveCandidates();
+      render();
+      renderDetail();
+    }
+    function renderShortlist() {
+      const root = document.getElementById('shortlist');
+      const chips = candidates.map(id => {
+        const hero = BLUEPRINTS.find(candidate => candidate.id === id);
+        return `<span class="candidate-chip">${hero.name}<button type="button" data-remove="${hero.id}" aria-label="移除${hero.name}">×</button></span>`;
+      }).join('');
+      root.innerHTML = `<span>我的短名单</span>${chips}<span id="shortlist-count">${candidates.length} / 3</span>`;
+      root.querySelectorAll('[data-remove]').forEach(button => button.addEventListener('click', () => toggleCandidate(button.dataset.remove)));
+      document.getElementById('planner-copy').textContent = candidates.length ? `已选 ${candidates.length} 位：${candidates.map(id => BLUEPRINTS.find(hero => hero.id === id).name).join('、')}` : '从短名单里比较战斗循环、操作压力和队伍空位。';
+    }
+    function render() {
+      const list = currentList();
+      grid.replaceChildren(...list.map((hero, index) => {
+        const card = document.createElement('article');
+        card.className = `hero-card${hero.id === activeId ? ' active' : ''}`;
+        card.style.setProperty('--index', index);
+        card.style.setProperty('--accent', hero.color);
+        card.innerHTML = `<div class="card-top"><span class="card-index">${String(BLUEPRINTS.indexOf(hero) + 1).padStart(2,'0')} / CONCEPT</span><span class="role-mark">${hero.role}</span></div><svg class="hero-art" viewBox="0 0 32 32" aria-hidden="true"><use href="assets/game-icons.svg#${hero.icon}"></use></svg><h3 class="hero-name">${hero.name}</h3><p class="anchor">${hero.anchor}</p><div class="card-meta"><span>难度 ${hero.difficulty}</span><span>${hero.tags.join(' / ')}</span></div><div class="card-actions"><button class="open-detail" type="button" data-open="${hero.id}">查看技能蓝本</button><button class="pick${candidates.includes(hero.id) ? ' selected' : ''}" type="button" data-pick="${hero.id}" aria-label="${candidates.includes(hero.id) ? '移出' : '加入'}短名单">${candidates.includes(hero.id) ? '✓' : '+'}</button></div>`;
+        return card;
+      }));
+      document.getElementById('visible-count').textContent = String(list.length);
+      document.getElementById('empty').hidden = list.length > 0;
+      grid.hidden = list.length === 0;
+      grid.querySelectorAll('[data-open]').forEach(button => button.addEventListener('click', () => {
+        activeId = button.dataset.open;
+        render(); renderDetail();
+        document.getElementById('detail').scrollIntoView({ behavior:'smooth', block:'nearest' });
+      }));
+      grid.querySelectorAll('[data-pick]').forEach(button => button.addEventListener('click', () => toggleCandidate(button.dataset.pick)));
+      renderShortlist();
+    }
+    function renderDetail() {
+      const hero = BLUEPRINTS.find(candidate => candidate.id === activeId) || BLUEPRINTS[0];
+      detail.style.setProperty('--accent', hero.color);
+      detail.innerHTML = `<header class="detail-head"><svg class="detail-icon" viewBox="0 0 32 32" aria-hidden="true"><use href="assets/game-icons.svg#${hero.icon}"></use></svg><div><p class="detail-kicker">${hero.anchor} / ${hero.difficulty} 操作</p><h2 class="detail-title">${hero.name}</h2><p class="detail-sub">${hero.role} · ${hero.tags.join(' / ')}</p></div><button class="detail-pick${candidates.includes(hero.id) ? ' selected' : ''}" type="button" id="detail-pick">${candidates.includes(hero.id) ? '已加入短名单' : '加入策划短名单'}</button></header><div class="detail-body"><div><p class="concept-label">角色幻想</p><p class="concept-copy">${hero.fantasy}</p><div class="loop"><p class="concept-label">推荐战斗循环</p><p class="concept-copy">${hero.loop}</p></div><p class="concept-label">适配价值</p><p class="concept-copy">${hero.fit}</p><div class="talents">${hero.talents.map(talent => `<span class="talent">${talent}</span>`).join('')}</div></div><ul class="skill-list">${hero.skills.map(([key,name,description]) => `<li class="skill"><b>${key} / ${name}</b><span>${description}</span></li>`).join('')}</ul></div>`;
+      document.getElementById('detail-pick').addEventListener('click', () => toggleCandidate(hero.id));
+    }
+    document.getElementById('filters').addEventListener('click', event => {
+      const button = event.target.closest('[data-filter]');
+      if (!button) return;
+      activeFilter = button.dataset.filter;
+      document.querySelector('.filter.active').classList.remove('active');
+      button.classList.add('active');
+      render();
+    });
+    search.addEventListener('input', render);
+    document.getElementById('clear-plan').addEventListener('click', () => { candidates = []; saveCandidates(); render(); renderDetail(); showToast('短名单已清空'); });
+    document.getElementById('copy-plan').addEventListener('click', async () => {
+      if (!candidates.length) { showToast('先把角色加入短名单'); return; }
+      const text = candidates.map((id, index) => {
+        const hero = BLUEPRINTS.find(candidate => candidate.id === id);
+        return `${index + 1}. ${hero.name}（${hero.role} / 难度${hero.difficulty}）\n   核心循环：${hero.loop}\n   适配价值：${hero.fit}`;
+      }).join('\n\n');
+      try { await navigator.clipboard.writeText(`Pixel League 新角色候选\n\n${text}`); showToast('策划摘要已复制'); }
+      catch (error) { showToast(`已选角色：${candidates.map(id => BLUEPRINTS.find(hero => hero.id === id).name).join('、')}`); }
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === '/' && document.activeElement !== search) { event.preventDefault(); search.focus(); }
+      if (event.key === 'Escape' && document.activeElement === search) { search.value = ''; search.blur(); render(); }
+    });
+    render();
+    renderDetail();
+  </script>
+</body>
+</html>
