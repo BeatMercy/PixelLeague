@@ -46,6 +46,20 @@ const HERO_KESTREL = {
     { id: 'k_wind', name: 'Tailwind', icon: '🌪️', desc: "Vault's cooldown resets whenever you kill an enemy." },
   ],
   tick(p, dt) {
+    const speedBuff = p.buffs.sensesA || p.buffs.senses;
+    if (speedBuff && speedBuff.t > 0) {
+      p._kSpeedTrail = (p._kSpeedTrail || 0) - dt;
+      if (p._kSpeedTrail <= 0) {
+        p._kSpeedTrail = 0.08;
+        for (let i = 0; i < 4; i++) {
+          const a = rand(0, TAU), r = rand(0.25, 0.9);
+          G.parts.push({ x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, z: 0, vx: Math.cos(a + Math.PI) * rand(0.4, 1), vy: Math.sin(a + Math.PI) * rand(0.4, 1), vz: rand(8, 18), life: rand(0.28, 0.6), col: pick(['#8ecaff', '#a6d8ff', '#c9ecff']), sz: 1 });
+        }
+        ringFx(p.x, p.y, 0.42, '#7bc3ff', 0.18);
+      }
+    } else {
+      p._kSpeedTrail = 0;
+    }
     p.hs = (p.hs || 0) - dt;
     if (p.hs <= 0) {
       const t = G.enemies.filter(e => e.alive && !(e.vuln > 0) && dist(p, e) < 7).sort((a, b) => dist(p, a) - dist(p, b))[0];
@@ -65,6 +79,21 @@ const HERO_KESTREL = {
       t.vuln = 0; ctx.phys += (12 + 7 * p.level + p.st.ad * 0.3) * (p.taken.k_harrier ? 1.5 : 1);
       ctx.onHit.push(e => burst(e.x, e.y, '#ffe070', 8, 2, 10, 0.4));
       if (p.ranks.W > 0) p.addBuff('senses', 2, { as: 20 + 8 * p.ranks.W, ms: 15 });
+      ringFx(p.x, p.y, 0.75, '#8ecaff', 0.42);
+      for (let i = 0; i < 12; i++) {
+        const a = rand(0, TAU), r = rand(0.15, 0.9);
+        G.parts.push({
+          x: p.x + Math.cos(a) * r,
+          y: p.y + Math.sin(a) * r,
+          z: 0,
+          vx: Math.cos(a) * rand(0.5, 1.4),
+          vy: Math.sin(a) * rand(0.5, 1.4),
+          vz: rand(8, 16),
+          life: rand(0.35, 0.7),
+          col: pick(['#8ecaff', '#c7ebff', '#68d6ff']),
+          sz: 1,
+        });
+      }
     }
   },
   onKill(p) { if (p.taken.k_wind) p.cd.E = 0; },

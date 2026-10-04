@@ -44,9 +44,9 @@ const extraTip = k => { const E = EXTRAS[k], lv = G.player.extras[k]; return `<d
 // ---- build ----
 function mkSlot(parent, icon, key, cls = '') {
   const s = document.createElement('div'); s.className = 'slot ' + cls;
-  s.innerHTML = `<div class="ic">${icon}</div><div class="cd"></div><div class="cdt"></div><div class="key">${key}</div>`;
+  s.innerHTML = `<div class="ic">${icon}</div><div class="cd"></div><div class="cd-mask"><div class="cd-hand"></div></div><div class="cdt"></div><div class="key">${key}</div>`;
   parent.appendChild(s);
-  return { el: s, cd: s.querySelector('.cd'), cdt: s.querySelector('.cdt') };
+  return { el: s, cd: s.querySelector('.cd'), mask: s.querySelector('.cd-mask'), hand: s.querySelector('.cd-hand'), cdt: s.querySelector('.cdt') };
 }
 function buildHUD() {
   const p = G.player, sk = $('skills'); sk.innerHTML = ''; HUD.slots = {};
@@ -92,7 +92,10 @@ function updateHUD(dt) {
   // cooldowns / slots (every frame, cheap)
   for (const k in HUD.slots) {
     const s = HUD.slots[k], cd = p.cd[k], f = cd > 0 ? cd / p.cdMax[k] : 0;
-    s.cd.style.height = (f * 100) + '%'; setText(s.cdt, cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '');
+    s.cd.style.height = (f * 100) + '%';
+    s.mask.style.opacity = cd > 0 ? '1' : '0';
+    s.hand.style.transform = `translate(-50%, -100%) rotate(${(1 - f) * 360}deg)`;
+    setText(s.cdt, cd > 0 ? (cd < 1 ? cd.toFixed(1) : Math.ceil(cd)) : '');
     if (s.pips) {
       const r = p.ranks[k], sk = p.hero.skills[k];
       s.el.classList.toggle('locked', !r);

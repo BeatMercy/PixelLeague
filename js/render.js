@@ -9,9 +9,28 @@ function drawUnit(u) {
   if (u.elite) { ctx.strokeStyle = `rgba(255,200,60,${0.5 + 0.3 * Math.sin(G.time * 6)})`; isoEllipse(u.x, u.y, u.r + 0.25); ctx.stroke(); }
   if (u === G.hoverEnemy) { ctx.strokeStyle = '#ff4040'; isoEllipse(u.x, u.y, u.r + 0.15); ctx.stroke(); }
   const alpha = u.spawnT > 0 ? 1 - u.spawnT / 0.6 : u.invuln > 0 && u === G.player ? 0.6 : 1;
+  const prevFilter = ctx.filter;
+  if (u === G.player) ctx.filter = 'saturate(1.08) brightness(1.04)';
+  else ctx.filter = 'saturate(0.82) brightness(0.96)';
   drawSprite(u.spr, u.animFrame(), vx, vy, u.face < 0, u.flash > 0, Math.max(0, alpha));
+  ctx.filter = prevFilter;
   const top = vy - u.spr.ay;
-  if (u.vuln > 0) { ctx.fillStyle = '#ffe070'; ctx.fillRect(vx - 1, top - 6, 3, 3); ctx.fillStyle = '#fff'; ctx.fillRect(vx, top - 5, 1, 1); }
+  if (u.vuln > 0) {
+    ctx.save();
+    const bodyCenterY = vy - Math.max(2, u.spr.ay * 0.52);
+    const bodyRadius = Math.max(8, u.r * 18);
+    ctx.shadowBlur = 12; ctx.shadowColor = '#ffe070';
+    ctx.strokeStyle = '#ffe070'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(vx - bodyRadius, bodyCenterY); ctx.lineTo(vx + bodyRadius, bodyCenterY);
+    ctx.moveTo(vx, bodyCenterY - bodyRadius * 0.9); ctx.lineTo(vx, bodyCenterY + bodyRadius * 0.9);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = 'rgba(255, 230, 130, 0.12)';
+    ctx.beginPath(); ctx.moveTo(vx, top + 2); ctx.lineTo(vx + bodyRadius * 0.8, bodyCenterY + 2); ctx.lineTo(vx, vy + 4); ctx.lineTo(vx - bodyRadius * 0.8, bodyCenterY + 2); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(255, 240, 180, 0.65)'; ctx.lineWidth = 1.25; ctx.beginPath(); ctx.moveTo(vx, top + 2); ctx.lineTo(vx + bodyRadius * 0.8, bodyCenterY + 2); ctx.lineTo(vx, vy + 4); ctx.lineTo(vx - bodyRadius * 0.8, bodyCenterY + 2); ctx.closePath(); ctx.stroke();
+    ctx.restore();
+  }
   if (u.vital > 0 || u.grand > 0) {
     const n = u.grand > 0 ? u.grand : 1;
     for (let i = 0; i < n; i++) { const a = G.time * 2 + i * TAU / Math.max(n, 1), px = vx + Math.cos(a) * 9, py = vy - 8 + Math.sin(a) * 4; ctx.fillStyle = '#ffd060'; ctx.fillRect(px - 1, py - 1, 3, 3); ctx.fillStyle = '#fff'; ctx.fillRect(px, py, 1, 1); }
@@ -61,9 +80,19 @@ function renderWorld() {
   ctx.fillStyle = '#0c0a14'; ctx.fillRect(0, 0, VW, VH);
   const sx = G.shake > 0 ? Math.round(rand(-2, 2) * G.shake * 3) : 0, sy = G.shake > 0 ? Math.round(rand(-2, 2) * G.shake * 3) : 0;
   G.cam.x += sx; G.cam.y += sy;
+  ctx.filter = 'saturate(0.82) brightness(0.96) contrast(0.98)';
   ctx.drawImage(G.ground.img, Math.round(G.ground.ox - G.cam.x + VW / 2), Math.round(G.ground.oy - G.cam.y + VH / 2));
+  ctx.filter = 'none';
   for (const z of G.zones) { ctx.globalAlpha = 0.25 + 0.1 * Math.sin(G.time * 6); ctx.fillStyle = z.col; isoEllipse(z.x, z.y, z.r); ctx.fill(); ctx.globalAlpha = 1; }
   drawFxGround();
+  if (IN.amove && p.alive) {
+    ctx.save();
+    ctx.globalAlpha = 0.8;
+    ctx.fillStyle = 'rgba(255, 208, 100, 0.08)';
+    ctx.strokeStyle = 'rgba(255, 220, 120, 0.9)'; ctx.lineWidth = 1.5; ctx.setLineDash([6, 4]);
+    isoEllipse(p.x, p.y, (p.st.range || 4.5) * 0.95); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
   if (G.moveMark && G.moveMark.t > 0) { ctx.globalAlpha = G.moveMark.t * 2; ctx.strokeStyle = G.moveMark.col; isoEllipse(G.moveMark.x, G.moveMark.y, 0.3 * G.moveMark.t * 2 + 0.1); ctx.stroke(); ctx.globalAlpha = 1; }
   const list = [];
   for (const pr of G.map.props) {

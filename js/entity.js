@@ -51,6 +51,34 @@ class Unit {
 function drawHpBar(u, w, col, yOff) {
   const x = toVX(u.x, u.y) * SCALE, y = (toVY(u.x, u.y, u.z) - yOff) * SCALE;
   const W = w * SCALE, H = Math.max(3, SCALE + 1), max = u.st.hp;
+  if (u === G.player) {
+    const bw = Math.min(96, w * 1.2) * SCALE * 0.8;
+    const bh = Math.max(5.6, 5.6 * SCALE);
+    const leftX = x - bw / 2;
+    const levelBoxW = Math.max(12.8, 14.4 * SCALE);
+    const pad = Math.max(1.6, 1.6 * SCALE);
+    const borderBoxW = bw + levelBoxW + pad * 3;
+    sctx.fillStyle = '#0a0d13'; sctx.fillRect(leftX - levelBoxW - pad * 2, y - bh / 2 - pad, borderBoxW, bh + pad * 2);
+    sctx.strokeStyle = '#f5d98b'; sctx.lineWidth = Math.max(1.2, 1.2 * SCALE / 3); sctx.strokeRect(leftX - levelBoxW - pad * 2, y - bh / 2 - pad, borderBoxW, bh + pad * 2);
+    sctx.fillStyle = '#1b2a34'; sctx.fillRect(leftX - levelBoxW, y - bh / 2, levelBoxW, bh);
+    sctx.fillStyle = '#f7e2a8'; sctx.font = `${Math.max(6.4, 6.4 * SCALE)}px VT323`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText(String(u.level || 1), leftX - levelBoxW / 2, y);
+    sctx.fillStyle = '#2b1a11'; sctx.fillRect(leftX, y - bh / 2, bw, bh);
+    const tot = Math.max(max, u.hp + u.shield);
+    sctx.fillStyle = col; sctx.fillRect(leftX, y - bh / 2, bw * u.hp / tot, bh);
+    if (u.shield > 0) { sctx.fillStyle = '#dfe7ff'; sctx.fillRect(leftX + bw * u.hp / tot, y - bh / 2, bw * u.shield / tot, bh); }
+    for (let hpMark = 100; hpMark < max; hpMark += 100) {
+      if (hpMark % 1000 === 0) continue;
+      const segX = leftX + bw * hpMark / max;
+      sctx.fillStyle = 'rgba(0,0,0,0.38)'; sctx.fillRect(segX - 0.5, y - bh / 2, 1, bh);
+    }
+    for (let hpMark = 1000; hpMark < max; hpMark += 1000) {
+      const segX = leftX + bw * hpMark / max;
+      sctx.fillStyle = '#000'; sctx.fillRect(segX - 1.5, y - bh / 2, 3, bh);
+    }
+    sctx.strokeStyle = '#000'; sctx.lineWidth = 1; sctx.strokeRect(leftX - 1, y - bh / 2 - 1, bw + 2, bh + 2);
+    sctx.textBaseline = 'alphabetic';
+    return;
+  }
   sctx.fillStyle = '#000'; sctx.fillRect(x - W / 2 - 1, y - 1, W + 2, H + 2);
   sctx.fillStyle = '#3a1010'; sctx.fillRect(x - W / 2, y, W, H);
   const tot = Math.max(max, u.hp + u.shield);
