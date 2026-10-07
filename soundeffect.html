@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pixel League Sound Effect Framework</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --bg-2: #111d2f;
+      --panel: rgba(17, 29, 47, 0.96);
+      --panel-2: rgba(23, 37, 58, 0.92);
+      --line: #2d4469;
+      --text: #edf3ff;
+      --muted: #aac2dd;
+      --gold: #f5d78b;
+      --cyan: #90d9ff;
+      --green: #8fe7af;
+      --red: #ff9a9a;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: radial-gradient(circle at top, var(--bg-2), var(--bg) 50%, #040a12 100%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+    body { padding: 28px 18px 80px; }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+    .header {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(27, 43, 66, 0.96), rgba(10, 16, 26, 0.96));
+      border-radius: 18px;
+      padding: 24px 28px;
+      box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+    }
+    h1 {
+      margin: 0 0 10px;
+      letter-spacing: 0.08em;
+      font-size: clamp(2rem, 3vw, 2.8rem);
+    }
+    .subtitle { margin: 0; color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px 20px;
+    }
+    h2 {
+      margin: 0 0 10px;
+      color: var(--gold);
+      font-size: 1.12rem;
+      letter-spacing: 0.04em;
+    }
+    h3 {
+      margin: 18px 0 8px;
+      color: var(--cyan);
+      font-size: 1rem;
+    }
+    p, li, code, pre {
+      color: var(--text);
+    }
+    code {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 2px 6px;
+      font-family: Consolas, monospace;
+    }
+    pre {
+      margin: 12px 0 0;
+      padding: 16px;
+      background: rgba(0,0,0,0.22);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: auto;
+      font-family: Consolas, monospace;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+    ul { padding-left: 18px; }
+    .pill {
+      display: inline-block;
+      margin: 0 8px 8px 0;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: rgba(144, 217, 255, 0.08);
+      color: var(--cyan);
+      font-size: 0.76rem;
+    }
+    .folder {
+      margin-top: 18px;
+      padding-left: 18px;
+      color: var(--muted);
+    }
+    .folder strong { color: var(--gold); }
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+    }
+    .table th, .table td {
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+    .table th { color: var(--gold); }
+    .ok { color: var(--green); }
+    .warn { color: var(--gold); }
+    .bad { color: var(--red); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="header">
+      <h1>Pixel League 音效系统交付框架</h1>
+      <p class="subtitle">这是一个面向代码交付的音效设计骨架，服务于当前战斗反馈与后续技能、环境和 UI 音效扩展。</p>
+    </header>
+
+    <section class="grid">
+      <article class="card">
+        <h2>交付目标</h2>
+        <ul>
+          <li>以工程化方式组织音效模块，便于持续扩展。</li>
+          <li>让攻击命中、击杀反馈接入战斗核心，而不是散落在视觉脚本中。</li>
+          <li>保持低成本、零资源包、无复杂依赖的实现方式。</li>
+        </ul>
+      </article>
+
+      <article class="card">
+        <h2>当前已落地</h2>
+        <ul>
+          <li><code>SFX.playAttackHit()</code>：命中时播放短促音效</li>
+          <li><code>SFX.playKill()</code>：单位死亡时播放击杀反馈</li>
+          <li>支持按距离做立体声 <code>pan</code> 处理</li>
+          <li>支持按伤害类型切换音色参数</li>
+        </ul>
+      </article>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>代码组织结构</h2>
+      <div class="folder"><strong>js/</strong></div>
+      <div class="folder">├─ <strong>sound.js</strong>：音效系统入口与通用生成器</div>
+      <div class="folder">├─ <strong>combat.js</strong>：伤害和死亡事件发射点</div>
+      <div class="folder">├─ <strong>hero_*.js</strong>：技能释放事件，可在这里扩展 cast/hit 音效</div>
+      <div class="folder">└─ <strong>main.js</strong> / <strong>ui.js</strong>：界面和菜单触发音效入口</div>
+
+      <h3>职责拆分</h3>
+      <table class="table">
+        <tr><th>模块</th><th>职责</th><th>要求</th></tr>
+        <tr>
+          <td><code>sound.js</code></td>
+          <td>创建 AudioContext, 生成音色, 组织事件注册</td>
+          <td>必须只负责音频实现，不处理逻辑判断</td>
+        </tr>
+        <tr>
+          <td><code>combat.js</code></td>
+          <td>在伤害事件、击杀事件上发出 <code>SFX</code> 请求</td>
+          <td>触发必须发生在真实战斗结果之后</td>
+        </tr>
+        <tr>
+          <td><code>hero_*.js</code></td>
+          <td>技能施放、命中、受击等音频参数定制</td>
+          <td>每个英雄可覆写一套技能音色策略</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>核心接口框架</h2>
+      <pre><code>class SoundSystem {
+  constructor() {
+    this.ctx = null;
+    this.enabled = true;
+    this.registry = new Map();
+  }
+
+  init() {}
+  ensureContext() {}
+  register(name, fn) {}
+  play(name, payload = {}) {}
+
+  playTone({ freq, duration, gain, type, slide, pan }) {}
+  playNoise({ duration, gain, color, pan }) {}
+
+  playAttackHit(src, tgt, type, amt) {}
+  playKill(unit, src) {}
+}
+
+const SFX = new SoundSystem();</code></pre>
+
+      <h3>事件命名约定</h3>
+      <ul>
+        <li><code>attackHit</code>：普通命中 / 受击反馈</li>
+        <li><code>kill</code>：单位死亡</li>
+        <li><code>skillCast</code>：放技能</li>
+        <li><code>skillHit</code>：技能命中</li>
+        <li><code>heal</code>：治疗/恢复</li>
+        <li><code>pickup</code>：拾取奖励</li>
+        <li><code>uiClick</code>：界面点击</li>
+      </ul>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>调用流程</h2>
+      <pre><code>// 1. 战斗核心判定真正造成伤害
+if (t.hp <= 0) killUnit(t, src);
+
+// 2. 伤害和死亡事件由核心统一触发
+SFX.playAttackHit(src, t, type, amt);
+SFX.playKill(u, src);
+
+// 3. 可扩展音效事件注册
+SFX.register('skillCast', ({ hero, skillName }) => {
+  // 生成对应技能音型
+});</code></pre>
+
+      <h3>设计原则</h3>
+      <ul>
+        <li>事件不直接写在渲染层，避免重复触发和混乱管理</li>
+        <li>音频参数只在音效层决策，战斗层只负责“发生了什么”</li>
+        <li>每一种伤害类型、每一种单位层级都可以在音效层细分</li>
+      </ul>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>当前已实现的参数策略</h2>
+      <table class="table">
+        <tr><th>事件</th><th>参数</th><th>当前策略</th></tr>
+        <tr>
+          <td><code>attackHit</code></td>
+          <td>type / amt / pan</td>
+          <td>物理音色偏硬，魔法偏亮，真伤偏尖锐</td>
+        </tr>
+        <tr>
+          <td><code>kill</code></td>
+          <td>boss / elite / unit</td>
+          <td>普通敌人短促，boss 增加低频冲击和尾音</td>
+        </tr>
+      </table>
+    </section>
+
+    <section class="card" style="margin-top:20px;">
+      <h2>扩展路线</h2>
+      <pre><code>// 技能音效扩展示例
+SFX.register('skillCast', ({ hero, skillName }) => {
+  if (hero.id === 'fortune') {
+    SFX.playTone({ freq: 420, duration: 0.12, gain: 0.08, type: 'triangle', pan: 0 });
+  }
+});
+
+SFX.register('heal', ({ amount }) => {
+  SFX.playTone({ freq: 660, duration: 0.14, gain: 0.05, type: 'sine', slide: 80, pan: 0 });
+});</code></pre>
+
+      <h3>后续迭代计划</h3>
+      <ul>
+        <li>加入 <span class="ok">技能释放音</span>：每个英雄做到独立克制音效</li>
+        <li>加入 <span class="warn">受伤反馈</span>：从伤害值大、小和角色状态区分强弱</li>
+        <li>加入 <span class="ok">治疗 / 奖励 / 升级</span>：强化正反馈节奏</li>
+        <li>加入 <span class="warn">boss 特效</span>：扩展长尾音和强冲击节奏</li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>

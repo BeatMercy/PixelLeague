@@ -3,7 +3,7 @@
 const HERO_ALDRIC = {
   id: 'aldric', name: 'Aldric', title: 'the Might of the Realm', role: 'Juggernaut · Melee', spr: 'aldric', color: '#3a5fa8',
   ranged: false, manaless: true,
-  base: { hp: 720, mp: 0, ad: 62, armor: 38, mr: 32, as: 0.65, ms: 3.1, range: 1.2, regen: 2.5, mregen: 0 },
+  base: { hp: 720, mp: 0, ad: 62, armor: 38, mr: 32, as: 0.65, ms: 2.64, range: 1.2, regen: 2.5, mregen: 0 },
   grow: { hp: 120, ad: 3.6, armor: 4.6, mr: 2.2, as: 2.6, regen: 0.25 },
   passive: { name: 'Perseverance', icon: '💚', desc: 'After 4s without taking damage, regenerate <b>2% max HP</b> per second. No mana: your skills are free.' },
   skills: {
@@ -75,4 +75,4 @@ const HERO_ALDRIC = {
   },
   onKill(p) { if (p.ranks.W > 0) p.courage = Math.min(40, (p.courage || 0) + 0.25); },
 };
-const HEROES = [HERO_KESTREL, HERO_VELA, HERO_ALDRIC];
+const HEROES = [HERO_KESTREL, HERO_VELA, HERO_FORTUNE, HERO_CAITLYN, HERO_ALDRIC];

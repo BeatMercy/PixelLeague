@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151914">
+  <title>Pixel League | render.js 分析</title>
+  <style>
+    :root { color-scheme:dark; --bg:#151914; --panel:#1d241d; --ink:#f0eee3; --muted:#b0b9aa; --faint:#879487; --line:#3d4b40; --green:#b8d18b; --teal:#86c7b1; --gold:#edc27b; --coral:#e69a7d; --mono:"Cascadia Code",Consolas,monospace; --sans:"Segoe UI","Microsoft YaHei UI",sans-serif; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:72px; }
+    body { margin:0; min-width:320px; color:var(--ink); background:var(--bg); background-image:linear-gradient(rgba(206,226,197,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(206,226,197,.025) 1px,transparent 1px); background-size:28px 28px; font:14px/1.7 var(--sans); }
+    a { color:var(--teal); text-decoration-color:rgba(134,199,177,.45); text-underline-offset:3px; }
+    code { color:#e9d29f; font: .92em var(--mono); }
+    .top { position:sticky; top:0; z-index:5; min-height:56px; padding:0 max(4vw,16px); display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); background:rgba(21,25,20,.96); backdrop-filter:blur(10px); }
+    .brand { color:var(--ink); text-decoration:none; font-size:11px; font-weight:700; white-space:nowrap; }
+    .brand b { display:inline-grid; width:26px; height:26px; margin-right:8px; place-items:center; color:#1a2119; background:var(--green); font:10px var(--mono); }
+    .links { display:flex; gap:16px; font:10px var(--mono); white-space:nowrap; }
+    .layout { width:min(1240px,92vw); margin:auto; display:grid; grid-template-columns:174px minmax(0,1fr); gap:38px; }
+    aside { position:sticky; top:72px; align-self:start; max-height:calc(100vh - 84px); overflow:auto; padding:22px 0; }
+    aside b { display:block; margin:0 0 8px 9px; color:var(--gold); font:9px var(--mono); }
+    aside a { display:block; padding:5px 9px; color:var(--muted); border-left:1px solid transparent; text-decoration:none; font-size:11px; }
+    aside a:hover { border-color:var(--green); color:var(--ink); }
+    main { min-width:0; padding:30px 0 64px; }
+    .hero { padding:27px 30px; border:1px solid #52634e; background:linear-gradient(115deg,#263329,#202823 60%,#302c22); }
+    .eyebrow,.kicker { margin:0; color:var(--green); font:9px var(--mono); letter-spacing:.1em; }
+    h1 { margin:9px 0 8px; font-size:clamp(30px,5vw,46px); line-height:1.12; }
+    h1 span { color:var(--gold); }
+    .hero p:last-child,.lede { max-width:820px; margin:0; color:#c8d0c3; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); margin:16px 0 38px; border-block:1px solid var(--line); }
+    .metric { padding:11px 14px; border-right:1px solid var(--line); }
+    .metric:last-child { border:0; }
+    .metric b { display:block; color:var(--gold); font:17px var(--mono); font-weight:500; }
+    .metric span { color:var(--muted); font-size:10px; }
+    section { margin:38px 0; }
+    .kicker { margin-bottom:5px; color:var(--coral); }
+    h2 { margin:0 0 12px; font-size:23px; line-height:1.25; }
+    h3 { margin:0 0 6px; font-size:14px; }
+    p { color:#c2cbbf; }
+    .stage-flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-top:17px; }
+    .stage { position:relative; min-height:130px; padding:13px; border-top:2px solid var(--green); background:var(--panel); }
+    .stage:nth-child(2) { border-color:var(--teal); }
+    .stage:nth-child(3) { border-color:var(--gold); }
+    .stage:nth-child(4) { border-color:var(--coral); }
+    .stage:not(:last-child)::after { content:"→"; position:absolute; z-index:1; top:44%; right:-9px; color:var(--gold); background:var(--bg); font:14px var(--mono); }
+    .stage b { display:block; margin-bottom:5px; color:var(--green); font:10px var(--mono); }
+    .stage p { margin:0; color:var(--muted); font-size:11px; }
+    .canvas-map { display:grid; grid-template-columns:1fr 30px 1fr 30px 1fr; align-items:center; gap:8px; margin:18px 0; }
+    .canvas-node { min-height:100px; padding:12px; border:1px solid var(--line); background:var(--panel); }
+    .canvas-node b { display:block; color:var(--teal); font:11px var(--mono); }
+    .canvas-node small { display:block; margin-top:4px; color:var(--muted); font-size:11px; }
+    .arrow { color:var(--gold); text-align:center; font:18px var(--mono); }
+    .table-wrap { overflow-x:auto; border-top:1px solid var(--line); }
+    table { width:100%; border-collapse:collapse; text-align:left; }
+    th { padding:8px 10px; color:var(--green); border-bottom:1px solid #53634f; font:9px var(--mono); font-weight:500; }
+    td { padding:8px 10px; color:#c3cbbf; border-bottom:1px solid #303a32; vertical-align:top; font-size:12px; }
+    td:first-child { white-space:nowrap; }
+    .layers { display:grid; gap:7px; max-width:880px; margin:16px auto 0; }
+    .layer { display:grid; grid-template-columns:145px 24px minmax(0,1fr); align-items:center; gap:9px; }
+    .layer code { display:block; padding:8px 10px; background:var(--panel); border:1px solid var(--line); }
+    .layer i { color:var(--gold); font:15px var(--mono); text-align:center; }
+    .layer span { color:var(--muted); font-size:11px; }
+    .columns { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .note { padding:12px 14px; border-top:1px solid var(--line); background:rgba(29,36,29,.7); }
+    .note b { color:var(--green); font:11px var(--mono); }
+    .note p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+    .callout { padding:13px 15px; border-left:2px solid var(--gold); background:#202821; }
+    footer { display:flex; justify-content:space-between; gap:12px; padding:16px 0; color:var(--faint); border-top:1px solid var(--line); font:9px var(--mono); }
+    @media(max-width:880px) { .layout { grid-template-columns:1fr; gap:0; } aside { position:relative; top:auto; display:flex; gap:3px; max-height:none; overflow:auto; padding:10px 0 0; white-space:nowrap; } aside b { display:none; } aside a { padding:5px 8px; border:1px solid var(--line); } main { padding-top:18px; } }
+    @media(max-width:620px) { .top { min-height:50px; padding-inline:4vw; } .brand { font-size:9px; } .links { gap:8px; font-size:8px; } .layout { width:92vw; } .hero { padding:21px 18px; } .metrics { grid-template-columns:1fr 1fr; } .metric:nth-child(2) { border-right:0; } .metric:nth-child(-n+2) { border-bottom:1px solid var(--line); } .stage-flow { grid-template-columns:1fr 1fr; } .stage:nth-child(2)::after { display:none; } .canvas-map { grid-template-columns:1fr; } .arrow { transform:rotate(90deg); } .columns { grid-template-columns:1fr; } .layer { grid-template-columns:112px 18px minmax(0,1fr); gap:5px; } .layer code { font-size:10px; overflow-wrap:anywhere; } .layer span { font-size:10px; } footer { flex-direction:column; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="../index.html"><b>PL</b>PIXEL LEAGUE / RENDER ANALYSIS</a>
+    <nav class="links" aria-label="分析页面"><a href="entity-analysis.html">工程总览</a><a href="ui-analysis.html">UI 模块</a></nav>
+  </header>
+  <div class="layout">
+    <aside aria-label="页面目录"><b>RENDER MAP</b><a href="#contract">模块边界</a><a href="#pipeline">绘制流水线</a><a href="#coordinates">坐标与缓冲</a><a href="#layers">深度层</a><a href="#drawers">绘制对象</a><a href="#coupling">耦合与副作用</a></aside>
+    <main>
+      <header class="hero">
+        <p class="eyebrow">MODULE ANALYSIS / js/render.js</p>
+        <h1>世界绘制流水线<br><span>从状态到像素</span></h1>
+        <p><code>render.js</code> 不推进战斗规则；它读取地图、单位和效果，把世界投影到低分辨率 Canvas，再放大并叠加血条/浮字。入口在 <code>main.js:frame()</code>，血条实现则位于 <code>entity.js</code>。</p>
+      </header>
+      <div class="metrics">
+        <div class="metric"><b>1 个入口</b><span>renderWorld()</span></div>
+        <div class="metric"><b>5 类深度对象</b><span>场景物件 / 单位 / 掉落 / 弹道 / 门</span></div>
+        <div class="metric"><b>2 个画布</b><span>低分辨率世界层 + 全分辨率覆盖层</span></div>
+        <div class="metric"><b>排序键</b><span>tile-space depth: x + y</span></div>
+      </div>
+
+      <section id="contract">
+        <p class="kicker">01 / MODULE CONTRACT</p>
+        <h2>输入、输出与依赖边界</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>方向</th><th>对象/接口</th><th>用途</th></tr></thead>
+          <tbody>
+            <tr><td>调用者</td><td><code>main.js → renderWorld()</code></td><td>每个动画帧在可绘制状态调用；渲染函数本身不按帧步长更新模拟。</td></tr>
+            <tr><td>场景输入</td><td><code>G.map / G.ground / G.cam / G.run.portal</code></td><td>地面、障碍、相机和可选传送门。</td></tr>
+            <tr><td>实体输入</td><td><code>G.player / G.enemies / G.drops / G.projs / G.zones</code></td><td>渲染器直接读取世界位置、动画/状态、掉落类型和颜色等字段。</td></tr>
+            <tr><td>显示资源</td><td><code>ctx / sctx / view / SCALE</code></td><td>低分辨率上下文画场景，全分辨率上下文承接放大画面后的 UI 级图层。</td></tr>
+            <tr><td>跨模块绘制</td><td><code>drawSprite / drawFxGround / drawFxTop / drawHpBar / drawTexts</code></td><td>精灵在 sprites，粒子/地面特效/浮字在 fx，血条在 entity。</td></tr>
+            <tr><td>输出</td><td>修改 Canvas 像素，少量提交新粒子</td><td>不返回场景对象；画面写入 view，再复制到主 canvas。</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="pipeline">
+        <p class="kicker">02 / FRAME PIPELINE</p>
+        <h2>单帧绘制顺序</h2>
+        <p class="lede">顺序决定遮挡和画布分辨率。只有对象队列使用深度排序；地面、区域、地面特效和顶部特效各自固定在专用阶段绘制。</p>
+        <div class="stage-flow">
+          <article class="stage"><b>01 / BASE</b><h3>清屏与地面</h3><p>清空 view，临时叠加镜头震动，绘制预渲染地面和区域底色。</p></article>
+          <article class="stage"><b>02 / GROUND FX</b><h3>地面提示</h3><p>画地面特效、攻击移动射程提示与鼠标移动标记。</p></article>
+          <article class="stage"><b>03 / DEPTH QUEUE</b><h3>收集并排序</h3><p>视野内 props 加入队列；活单位、掉落、投射物和传送门按深度排序。</p></article>
+          <article class="stage"><b>04 / ACTORS</b><h3>逐项绘制</h3><p>按类型画物件、单位、掉落、弹道或传送门；处理树/建筑对玩家的遮挡。</p></article>
+          <article class="stage"><b>05 / TOP FX</b><h3>角色效果</h3><p>绘制 EXTRAS，再画顶部特效、粒子、暗角和低生命红色覆盖。</p></article>
+          <article class="stage"><b>06 / UPSCALE</b><h3>放大与覆盖</h3><p>恢复临时 camera shake；像素化放大 view，在主 Canvas 画血条和浮字。</p></article>
+        </div>
+      </section>
+
+      <section id="coordinates">
+        <p class="kicker">03 / PROJECTION</p>
+        <h2>坐标转换与两层 Canvas</h2>
+        <div class="canvas-map" aria-label="坐标和画布转换">
+          <div class="canvas-node"><b>世界 tile 坐标 (x,y,z)</b><small>单位、障碍、掉落和地图效果保存的位置。</small></div><span class="arrow">→</span>
+          <div class="canvas-node"><b>等距投影 + 相机</b><small>isoX = (x-y) × HTW<br>isoY = (x+y) × HTH<br>toV* 再减 cam 并加视口中心。</small></div><span class="arrow">→</span>
+          <div class="canvas-node"><b>view → canvas</b><small>先画低分辨率 view；<code>imageSmoothingEnabled=false</code> 放大到主 canvas。</small></div>
+        </div>
+        <p class="callout"><code>z</code> 只影响垂直屏幕投影（<code>toVY</code> 减 z），不参与地面深度排序。对象遮挡顺序按 tile 的 <code>x + y</code>，与投影后的屏幕 y 有对应关系。</p>
+      </section>
+
+      <section id="layers">
+        <p class="kicker">04 / DEPTH QUEUE</p>
+        <h2>排序记录结构</h2>
+        <div class="layers" aria-label="深度队列成员">
+          <div class="layer"><code>props</code><i>→</i><span><code>d = prop.x + prop.y</code>；入队前用投影边界剔除远离视口的场景物件。</span></div>
+          <div class="layer"><code>Enemy / Player</code><i>→</i><span><code>d = unit.x + unit.y</code>；仅绘制 alive 单位。</span></div>
+          <div class="layer"><code>drops</code><i>→</i><span><code>d = drop.x + drop.y</code>；受高度影响的是显示位置，不是地面深度。</span></div>
+          <div class="layer"><code>projectiles</code><i>→</i><span><code>d = proj.x + proj.y + 0.5</code>；常量偏移让弹道略晚于同位置地面对象绘制。</span></div>
+          <div class="layer"><code>portal</code><i>→</i><span><code>d = portal.x + portal.y</code>；若存在则进入同一队列。</span></div>
+        </div>
+        <p class="lede" style="margin-top:13px">每项的 <code>k</code> 是分派绘制类型，不是次级排序优先级；比较器只比较 <code>d</code>。重构时若要定义同深度顺序，应显式扩展比较器，不要误以为 k 已参与排序。</p>
+      </section>
+
+      <section id="drawers">
+        <p class="kicker">05 / OBJECT DRAWERS</p>
+        <h2>绘制函数读取的状态</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>函数</th><th>对象输入</th><th>附加绘制/判断</th></tr></thead>
+          <tbody>
+            <tr><td><code>drawUnit(u)</code></td><td>Unit 子类对象</td><td>阴影、精英/悬停圈、精灵帧/闪白、易伤符号、Vital 点、减速/护盾/格挡提示。</td></tr>
+            <tr><td><code>drawDrop(d)</code></td><td><code>kind=gold|potion|item</code></td><td>金币/药水/物品各自像素图；稀有物品光柱与悬停边框。</td></tr>
+            <tr><td><code>drawProj(p)</code></td><td>追踪弹或直线技能弹</td><td>小型非首领追踪弹按角度画线段；其他弹道按 size/col 画像素块。</td></tr>
+            <tr><td><code>drawPortal(o)</code></td><td><code>{x,y}</code></td><td>绘制多层扩散椭圆和中心填色。</td></tr>
+            <tr><td><code>drawHpBar(u,...)</code></td><td>从 entity.js 调用</td><td>放大画面后画玩家/精英血条；普通敌人非首领才在这里补血条。</td></tr>
+            <tr><td><code>drawTexts()</code></td><td>从 fx.js 调用</td><td>主 canvas 全分辨率画伤害数字/提示，并通过 i18n 翻译。</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="coupling">
+        <p class="kicker">06 / COUPLING & SIDE EFFECTS</p>
+        <h2>修改时要守住的边界</h2>
+        <div class="columns">
+          <article class="note"><b>状态更新不属于 render</b><p>移动、伤害、存活筛选后的删除都由 main/combat/spawner 等模块维护。render 只消费当前状态；新效果应先定义数据来源与更新者，再加绘制。</p></article>
+          <article class="note"><b>渲染不是完全纯函数</b><p><code>drawPortal()</code> 以 <code>chance()</code> 随机调用 <code>burst()</code>，会向 <code>G.parts</code> 添加粒子。相同状态下重复绘制可能改变后续效果数量。</p></article>
+          <article class="note"><b>投影与相机属于 core</b><p>单位位置不是屏幕像素。绘制器通过 <code>toVX/toVY</code>、<code>isoX/isoY</code> 转换；逻辑层勿直接把屏幕坐标写回实体。</p></article>
+          <article class="note"><b>额外技能画法是插件点</b><p><code>Player.extras</code> 的键由 EXTRAS 定义；render 遍历键并可调用 <code>EXTRAS[k].draw()</code>。加技能时只更新 draw，不要把技能逻辑塞进渲染模块。</p></article>
+          <article class="note"><b>屏幕覆盖分辨率不同</b><p>血条与浮字位于 upscale 后的主 canvas；普通 sprite/场景效果位于低分辨率 ctx。调整尺寸/线宽时需选对 ctx 和 SCALE。</p></article>
+          <article class="note"><b>透明状态需还原</b><p>绘制时多处修改 globalAlpha/filter/lineWidth。新分支若提前 return 或遗漏还原，可能污染后续对象绘制状态。</p></article>
+        </div>
+        <p class="callout" style="margin-top:14px">相邻分析：<a href="entity-analysis.html">工程对象总览</a> · <a href="ui-analysis.html">UI 状态与动作流</a></p>
+      </section>
+      <footer><span>PIXEL LEAGUE / RENDER MODULE</span><span>分析依据：当前 js/render.js 与调用点</span></footer>
+    </main>
+  </div>
+</body>
+</html>
+

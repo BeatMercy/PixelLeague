@@ -3,7 +3,7 @@
 const HERO_VELA = {
   id: 'vela', name: 'Vela', title: 'the Silver Duelist', role: 'Duelist · Melee', spr: 'vela', color: '#b8c8e0',
   ranged: false,
-  base: { hp: 660, mp: 300, ad: 64, armor: 35, mr: 32, as: 0.72, ms: 3.3, range: 1.15, regen: 2.8, mregen: 2.0 },
+  base: { hp: 660, mp: 300, ad: 64, armor: 35, mr: 32, as: 0.72, ms: 2.8, range: 1.15, regen: 2.8, mregen: 2.0 },
   grow: { hp: 105, mp: 22, ad: 3.4, armor: 4.2, mr: 2, as: 3.2, regen: 0.2, mregen: 0.15 },
   passive: { name: "Duelist's Dance", icon: '✨', desc: 'Periodically reveal a <b>Vital</b> on a nearby enemy. Striking a Vital with an attack or skill deals bonus true damage (3% + 4% per 100 bonus AD of max HP), heals you and grants move speed.' },
   skills: {

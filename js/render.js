@@ -128,7 +128,7 @@ function renderWorld() {
   G.cam.x -= sx; G.cam.y -= sy;
   // upscale + full-res overlays
   sctx.drawImage(view, 0, 0, VW * SCALE, VH * SCALE);
-  for (const e of G.enemies) if (e.alive && e.spawnT <= 0 && !e.boss) drawHpBar(e, e.elite ? 22 : 14, e.elite ? '#ffb030' : '#e03030', e.spr.ay + 4);
+  for (const e of G.enemies) if (e.alive && e.spawnT <= 0 && !e.boss) drawHpBar(e, e.elite ? 22 : 14, '#e03030', e.spr.ay + 4);
   if (p.alive) drawHpBar(p, 22, '#40d050', p.spr.ay + 4);
   drawTexts();
 }

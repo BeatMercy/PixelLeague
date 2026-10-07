@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151914">
+  <title>Pixel League | 实体与工程结构分析</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #151914;
+      --panel: #1d241d;
+      --panel-2: #232c25;
+      --ink: #f0eee3;
+      --muted: #b0b9aa;
+      --faint: #879487;
+      --line: #3d4b40;
+      --green: #b8d18b;
+      --teal: #86c7b1;
+      --gold: #edc27b;
+      --coral: #e69a7d;
+      --blue: #91bce0;
+      --mono: "Cascadia Code", Consolas, monospace;
+      --sans: "Segoe UI", "Microsoft YaHei UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; scroll-padding-top: 78px; }
+    body {
+      margin: 0;
+      min-width: 320px;
+      color: var(--ink);
+      background-color: var(--bg);
+      background-image: linear-gradient(rgba(206, 226, 197, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(206, 226, 197, .025) 1px, transparent 1px);
+      background-size: 28px 28px;
+      font: 14px/1.7 var(--sans);
+    }
+    a { color: var(--teal); text-decoration-color: rgba(134, 199, 177, .45); text-underline-offset: 3px; }
+    a:hover { color: #c4ebdd; }
+    code, pre, .mono { font-family: var(--mono); }
+    code { color: #e9d29f; font-size: .92em; }
+    .topbar {
+      position: sticky; top: 0; z-index: 5; min-height: 58px; padding: 0 max(5vw, 18px);
+      display: flex; align-items: center; justify-content: space-between; gap: 18px;
+      border-bottom: 1px solid var(--line); background: rgba(21, 25, 20, .96); backdrop-filter: blur(10px);
+    }
+    .brand { color: var(--ink); text-decoration: none; font-size: 12px; font-weight: 700; letter-spacing: .04em; white-space: nowrap; }
+    .brand b { display: inline-grid; width: 27px; height: 27px; margin-right: 9px; place-items: center; color: #1a2119; background: var(--green); border: 1px solid #d7e7b9; font: 10px var(--mono); }
+    .top-links { display: flex; gap: 18px; font: 10px var(--mono); white-space: nowrap; }
+    .frame { width: min(1260px, 92vw); margin: auto; display: grid; grid-template-columns: 188px minmax(0, 1fr); gap: 42px; }
+    .toc { position: sticky; top: 76px; align-self: start; max-height: calc(100vh - 90px); overflow: auto; padding: 25px 0; }
+    .toc strong { display: block; margin: 0 0 9px 10px; color: var(--gold); font: 9px var(--mono); letter-spacing: .1em; }
+    .toc a { display: block; padding: 6px 10px; color: var(--muted); border-left: 1px solid transparent; text-decoration: none; font-size: 12px; }
+    .toc a:hover { color: var(--ink); border-left-color: var(--green); }
+    main { min-width: 0; padding: 34px 0 70px; }
+    .hero { position: relative; overflow: hidden; padding: 30px 34px; border: 1px solid #52634e; background: linear-gradient(115deg, #263329, #202823 60%, #302c22); }
+    .hero::after { content: "UNIT / PLAYER / ENEMY / BOSS"; position: absolute; right: 20px; bottom: 12px; color: rgba(224, 234, 218, .08); font: 12px var(--mono); letter-spacing: .08em; }
+    .eyebrow, .kicker { margin: 0; color: var(--green); font: 10px var(--mono); letter-spacing: .1em; }
+    h1 { max-width: 780px; margin: 10px 0 8px; font-size: clamp(30px, 5vw, 48px); font-weight: 650; line-height: 1.12; }
+    h1 span { color: var(--gold); }
+    .hero p:last-child { max-width: 760px; margin: 0; color: #c8d0c3; font-size: 14px; }
+    .metrics { display: grid; grid-template-columns: repeat(4, 1fr); margin: 17px 0 42px; border-block: 1px solid var(--line); }
+    .metric { min-height: 76px; padding: 12px 16px; border-right: 1px solid var(--line); }
+    .metric:last-child { border: 0; }
+    .metric b { display: block; color: var(--gold); font: 19px var(--mono); font-weight: 500; }
+    .metric span { color: var(--muted); font-size: 11px; }
+    section { margin: 42px 0; }
+    .kicker { margin-bottom: 5px; color: var(--coral); }
+    h2 { margin: 0 0 12px; font-size: 24px; font-weight: 600; letter-spacing: 0; line-height: 1.25; }
+    h3 { margin: 0 0 7px; color: #e9e6d8; font-size: 15px; font-weight: 600; }
+    p { margin: 8px 0; color: #c2cbbf; }
+    .lede { max-width: 850px; margin: 0 0 18px; }
+    .callout { padding: 13px 16px; color: #d1d8ca; background: #202a26; border-left: 2px solid var(--teal); }
+    .callout strong { color: var(--teal); }
+    .inheritance { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: stretch; }
+    .unit-root { grid-column: 1 / -1; max-width: 720px; width: 100%; margin: auto; }
+    .object-node { min-width: 0; padding: 14px 16px; border: 1px solid var(--line); background: rgba(29, 36, 29, .88); }
+    .object-node.unit { border-color: #91a96c; background: #242e24; }
+    .object-node.player { border-top: 3px solid var(--blue); }
+    .object-node.enemy { border-top: 3px solid var(--coral); }
+    .object-node.boss { border-top: 3px solid var(--gold); }
+    .node-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 7px; }
+    .node-head strong { font: 16px var(--mono); }
+    .node-head small { color: var(--faint); font: 9px var(--mono); }
+    .object-node ul { margin: 0; padding-left: 17px; color: var(--muted); font-size: 12px; }
+    .object-node li + li { margin-top: 3px; }
+    .extends { grid-column: 1 / -1; height: 28px; display: flex; justify-content: space-around; align-items: center; color: var(--faint); font: 10px var(--mono); }
+    .extends span::before { content: "↓"; display: block; color: var(--green); text-align: center; font: 17px/1 var(--sans); }
+    .two-col { display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px; align-items: start; }
+    .field-groups { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-group { padding: 12px 14px; border-top: 1px solid var(--line); background: rgba(29, 36, 29, .7); }
+    .field-group h3 { color: var(--green); font: 11px var(--mono); }
+    .field-group p { margin: 4px 0 0; color: var(--muted); font-size: 12px; }
+    .field-group code { display: block; margin-top: 4px; color: #e8d9b3; overflow-wrap: anywhere; }
+    .table-wrap { overflow-x: auto; border-top: 1px solid var(--line); }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { padding: 8px 10px; color: var(--green); border-bottom: 1px solid #53634f; font: 9px var(--mono); font-weight: 500; text-transform: uppercase; letter-spacing: .07em; }
+    td { padding: 8px 10px; color: #c3cbbf; border-bottom: 1px solid #303a32; vertical-align: top; font-size: 12px; }
+    td:first-child { white-space: nowrap; }
+    .relmap { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .rel { min-height: 116px; padding: 13px 14px; border-left: 2px solid var(--green); background: rgba(35, 44, 37, .8); }
+    .rel:nth-child(3n + 2) { border-color: var(--teal); }
+    .rel:nth-child(3n) { border-color: var(--gold); }
+    .rel b { display: block; margin-bottom: 5px; color: var(--ink); font: 12px var(--mono); }
+    .rel p { margin: 0; color: var(--muted); font-size: 12px; }
+    .sequence { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-block: 1px solid var(--line); }
+    .step { position: relative; min-height: 130px; padding: 14px 14px 18px; border-right: 1px solid var(--line); }
+    .step:last-child { border: 0; }
+    .step .num { color: var(--gold); font: 10px var(--mono); }
+    .step h3 { margin: 7px 0 4px; }
+    .step p { margin: 0; font-size: 11px; }
+    .sequence-arrow { position: absolute; top: 49px; right: -8px; z-index: 1; color: var(--green); background: var(--bg); font: 14px var(--mono); }
+    .codeflow { display: grid; grid-template-columns: 1fr; gap: 7px; max-width: 850px; margin: 17px auto 0; }
+    .flow-row { display: grid; grid-template-columns: minmax(120px, .7fr) 28px minmax(0, 1.3fr); align-items: center; gap: 10px; }
+    .flow-row code { display: block; padding: 8px 11px; border: 1px solid var(--line); background: var(--panel); }
+    .flow-row span { color: var(--gold); text-align: center; font: 17px var(--mono); }
+    .flow-row small { color: var(--muted); font-size: 11px; }
+    .load-order { display: flex; flex-wrap: wrap; gap: 6px; margin: 14px 0 0; padding: 0; list-style: none; counter-reset: load; }
+    .load-order li { position: relative; padding: 5px 8px 5px 25px; color: #d4d8cf; border: 1px solid var(--line); background: var(--panel); font: 10px var(--mono); counter-increment: load; }
+    .load-order li::before { content: counter(load, decimal-leading-zero); position: absolute; left: 7px; color: var(--green); font-size: 8px; }
+    .module-table td:first-child { min-width: 126px; white-space: normal; }
+    .module-table td:nth-child(2) { min-width: 250px; }
+    .module-table code { white-space: nowrap; }
+    .notes { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .note { padding: 13px 15px; border-top: 1px solid var(--line); }
+    .note b { color: var(--gold); font-size: 12px; }
+    .note p { margin: 5px 0 0; font-size: 12px; }
+    footer { display: flex; justify-content: space-between; gap: 12px; padding: 17px 0; color: var(--faint); border-top: 1px solid var(--line); font: 9px var(--mono); }
+    @media (max-width: 900px) {
+      .frame { grid-template-columns: 1fr; gap: 0; }
+      .toc { position: relative; top: auto; display: flex; gap: 3px; max-height: none; overflow-x: auto; padding: 12px 0 0; white-space: nowrap; }
+      .toc strong { display: none; }
+      .toc a { padding: 5px 8px; border: 1px solid var(--line); font-size: 11px; }
+      main { padding-top: 20px; }
+    }
+    @media (max-width: 650px) {
+      .topbar { min-height: 52px; padding-inline: 4vw; }
+      .brand { font-size: 9px; }
+      .top-links { flex: none; gap: 8px; font-size: 9px; }
+      .frame { width: 92vw; }
+      .hero { padding: 22px 19px; }
+      .hero::after { font-size: 9px; }
+      .metrics { grid-template-columns: 1fr 1fr; }
+      .metric:nth-child(2) { border-right: 0; }
+      .metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+      .inheritance { grid-template-columns: 1fr; }
+      .unit-root, .extends { grid-column: auto; }
+      .extends { height: auto; justify-content: center; flex-wrap: wrap; gap: 4px 12px; padding: 5px 0; }
+      .extends span { display: inline-flex; align-items: center; gap: 4px; }
+      .extends span::before { content: "↓"; display: inline; }
+      .extends span:nth-child(1)::after { content: " → Player"; color: var(--blue); }
+      .extends span:nth-child(2)::after { content: " → Enemy"; color: var(--coral); }
+      .extends span:nth-child(3)::after { content: " → Boss"; color: var(--gold); }
+      .field-groups, .two-col, .relmap, .notes { grid-template-columns: 1fr; }
+      .sequence { grid-template-columns: 1fr 1fr; }
+      .step:nth-child(2) { border-right: 0; }
+      .step:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+      .sequence-arrow { display: none; }
+      .flow-row { grid-template-columns: 1fr 20px; }
+      .flow-row small { grid-column: 1 / -1; padding: 0 10px 6px; }
+      footer { flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../index.html"><b>PL</b>PIXEL LEAGUE / ANALYSIS</a>
+    <nav class="top-links" aria-label="相关页面"><a href="../index.html">游戏</a><a href="../dev-context.html">开发导览</a><a href="../icons.html">图标库</a></nav>
+  </header>
+  <div class="frame">
+    <nav class="toc" aria-label="页面目录">
+      <strong>分析目录</strong>
+      <a href="#overview">概览</a><a href="#inheritance">实体继承</a><a href="#unit">Unit 字段</a><a href="#relations">对象关系</a>
+      <a href="#flows">运行时序</a><a href="#modules">模块索引</a><a href="#content-model">内容配置</a>
+      <a href="#stages">关卡地图</a><a href="#app-states">界面状态</a><a href="#surfaces">工程页面</a><a href="#maintenance">维护观察</a>
+    </nav>
+    <main>
+      <header class="hero" id="overview">
+        <p class="eyebrow">SOURCE-BASED MAP / CURRENT WORKSPACE</p>
+        <h1>实体模型与<br><span>工程结构分析</span></h1>
+        <p>从 <a href="../js/entity.js">entity.js</a> 的 <code>Unit</code> 出发，追踪玩家、敌人、首领如何被创建、更新、结算并绘制；同时把当前 HTML 入口中的脚本和外围页面归档。</p>
+      </header>
+      <div class="metrics" aria-label="源码概况">
+        <div class="metric"><b>4 类</b><span>Unit → Player / Enemy → Boss</span></div>
+        <div class="metric"><b>5 位</b><span>由 HEROES 注册的可选英雄</span></div>
+        <div class="metric"><b>29</b><span>index.html 顺序加载的游戏脚本</span></div>
+        <div class="metric"><b>全局</b><span>经典脚本，共享 G 与全局函数</span></div>
+      </div>
+
+      <section id="inheritance">
+        <p class="kicker">01 / ENTITY MODEL</p>
+        <h2>继承树与职责边界</h2>
+        <p class="lede">实体使用原生 class 继承，公共战斗/动画状态集中在 <code>Unit</code>；玩家和敌人各自扩展行为，首领只在敌人之上增加首领专属状态与技能编排。</p>
+        <div class="inheritance" aria-label="实体类继承关系">
+          <article class="object-node unit unit-root">
+            <div class="node-head"><strong>Unit</strong><small>js/entity.js</small></div>
+            <ul><li>位置、碰撞半径、生命、基础属性袋</li><li>控制状态、护盾、持续伤害、击退</li><li>朝向、移动/攻击动画与共用状态更新</li></ul>
+          </article>
+          <div class="extends"><span>extends Unit</span><span>extends Unit</span><span>extends Enemy</span></div>
+          <article class="object-node player">
+            <div class="node-head"><strong>Player</strong><small>js/player.js</small></div>
+            <ul><li>英雄配置、等级/经验、技能等级与冷却</li><li>属性重算、移动/攻击指令、施法</li><li>装备、增益、天赋、额外技能与路径</li></ul>
+          </article>
+          <article class="object-node enemy">
+            <div class="node-head"><strong>Enemy</strong><small>js/enemy.js</small></div>
+            <ul><li>ENEMY_DEF 配置、AI 类型、关卡缩放</li><li>追击/攻击/冲锋、死亡奖励与掉落</li><li>精英属性通过 elite 标志调整</li></ul>
+          </article>
+          <article class="object-node boss">
+            <div class="node-head"><strong>Boss</strong><small>js/boss.js</small></div>
+            <ul><li>继承 Enemy 的基础 AI 与死亡流程</li><li>首领技能预警/施放轮换、狂暴阶段</li><li>击杀后通知关卡流程创建传送门</li></ul>
+          </article>
+        </div>
+        <p class="callout"><strong>注意：</strong>图中第三条继承线表示 <code>Boss extends Enemy</code>，不是 <code>Boss extends Unit</code>。<code>Boss</code> 构造器先调用 <code>Enemy</code> 构造器，再覆盖首领属性和奖励。</p>
+      </section>
+
+      <section id="unit">
+        <p class="kicker">02 / UNIT SHAPE</p>
+        <h2><code>Unit</code> 对象字段分区</h2>
+        <div class="two-col">
+          <div class="field-groups">
+            <div class="field-group"><h3>空间与生命</h3><code>x, y, r, z<br>hp, st, alive</code><p>世界坐标、碰撞半径、高度、当前生命和属性字典。构造初始 hp=1；子类构造器随后设置真实值。</p></div>
+            <div class="field-group"><h3>控制与防御</h3><code>stun, slowT, slowAmt<br>blind, silence, root<br>shield, shieldT, invuln, flash</code><p>控制效果使用秒数倒计时；护盾独立吸收伤害，invuln 阻断伤害。</p></div>
+            <div class="field-group"><h3>持续效果与位移</h3><code>dots[], knock, lastHurt</code><p>DOT 记录源、DPS、剩余时长、伤害类型和 tick；击退记录速度与剩余时间。</p></div>
+            <div class="field-group"><h3>朝向与动作</h3><code>face, animT, moving<br>atkAnim, atkCd, windup</code><p><code>animFrame()</code> 从攻击/移动状态派生精灵帧，不独立保存帧编号。</p></div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>成员</th><th>作用</th></tr></thead>
+              <tbody>
+                <tr><td><code>speed</code></td><td>由 <code>st.ms</code>、减速比例及 root 状态计算。</td></tr>
+                <tr><td><code>disabled</code></td><td>仅由 <code>stun &gt; 0</code> 判断。</td></tr>
+                <tr><td><code>slow / stunFor</code></td><td>应用控制并乘以可选的 <code>ccRes</code> 抗性。</td></tr>
+                <tr><td><code>addShield / dot</code></td><td>添加护盾或可按 tag 刷新/合并的持续伤害。</td></tr>
+                <tr><td><code>knockTo</code></td><td>把目标位移换算为速度，交给 tick 更新。</td></tr>
+                <tr><td><code>tickStatus(dt)</code></td><td>衰减控制/防御计时，应用击退并触发 DOT 的 <code>dealDamage()</code>。</td></tr>
+                <tr><td><code>faceTo / animFrame</code></td><td>更新水平朝向，按攻击优先、移动其次选择动画帧。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <p class="callout">血条绘制函数也放在 <a href="../js/entity.js">entity.js</a>：<code>drawHpBar()</code> 区分玩家/精英与普通敌人；精英/玩家显示等级框、延迟血量尾迹及护盾段。</p>
+      </section>
+
+      <section id="relations">
+        <p class="kicker">03 / COMPOSITION</p>
+        <h2>运行时对象如何组合</h2>
+        <div class="relmap">
+          <article class="rel"><b>G : GlobalState</b><p>游戏唯一共享状态容器。拥有当前 <code>player</code>、<code>enemies</code>、地图、镜头，以及投射物、掉落、区域、计时器和特效数组。</p></article>
+          <article class="rel"><b>Player → hero</b><p>引用 HEROES 中的配置对象。属性成长、技能 Q/W/E/R、被动、角色专属卡片和生命周期钩子都由该配置驱动。</p></article>
+          <article class="rel"><b>Player → items[]</b><p>物品为数据对象，含 <code>uid/name/rarity/stats</code>，可选 <code>passive/desc</code>。<code>recalc()</code> 聚合属性。</p></article>
+          <article class="rel"><b>Player → extras</b><p><code>extras</code> 保存技能等级，<code>extraState</code> 保存每项运行状态；技能行为和绘制由 EXTRAS 定义。</p></article>
+          <article class="rel"><b>G.enemies[]</b><p>同时容纳 <code>Enemy</code> 与 <code>Boss</code>。主循环按 <code>alive</code> 更新/绘制，击杀后由 spawner 处理首领完成事件。</p></article>
+          <article class="rel"><b>G.map : MapData</b><p><code>biome/tile/block/props/flow/tiles</code>。地图模块另提供移动碰撞、A* 玩家寻路和 BFS 敌人流场。</p></article>
+          <article class="rel"><b>G.projs[]</b><p>普通对象而非 class：追踪弹以 <code>homing/tgt/spd</code> 表示；直线弹以 <code>vx/vy/r/hit/pierce</code> 表示，行为由回调承载。</p></article>
+          <article class="rel"><b>G.drops[]</b><p>以 <code>kind</code> 区分 gold、potion、item；还可带位置、高度/抛掷速度和拾取锁定。</p></article>
+          <article class="rel"><b>G.fx / parts / texts</b><p>分别保存绘制效果、粒子和浮字记录；创建者负责提交，<code>updateFx()</code> 衰减，render/fx 负责显示。</p></article>
+        </div>
+        <div class="table-wrap" style="margin-top:18px">
+          <table>
+            <thead><tr><th>临时对象</th><th>字段/变体</th><th>生命周期</th></tr></thead>
+            <tbody>
+              <tr><td><code>G.run</code></td><td><code>stage/wave/phase/queue/gold/kills/time/portal/boss</code> 等</td><td>startRun 建立；startStage/startWave/spawnBoss 推進；结算由 UI/meta 完成。</td></tr>
+              <tr><td>技能区域 <code>G.zones[]</code></td><td><code>x/y/r/t/tick</code> 与可选颜色等</td><td><code>stepPlay()</code> 衰减 t 并回调 tick，到期移除。</td></tr>
+              <tr><td>定时任务 <code>G.timers[]</code></td><td><code>{t, fn}</code></td><td><code>later()</code> 入列；到期由 <code>tickTimers()</code> 调用闭包。</td></tr>
+              <tr><td>局外存档</td><td><code>shards/up/runs/wins/best/bestTime</code></td><td><code>meta.js</code> 通过 localStorage 的 <code>pixelLeague.meta.v1</code> 持久化。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="flows">
+        <p class="kicker">04 / RUNTIME FLOW</p>
+        <h2>从输入到伤害，再到绘制</h2>
+        <div class="sequence" aria-label="局内主循环">
+          <article class="step"><span class="num">01 / INPUT</span><span class="sequence-arrow">›</span><h3>接收输入</h3><p><code>core.js</code> 记录按键/鼠标，并转发至 G 上的处理器。</p></article>
+          <article class="step"><span class="num">02 / ROUTE</span><span class="sequence-arrow">›</span><h3>发出指令</h3><p><code>main.js</code> 更新鼠标世界坐标，调用移动、攻击、施法或 UI 行为。</p></article>
+          <article class="step"><span class="num">03 / UPDATE</span><span class="sequence-arrow">›</span><h3>推进模拟</h3><p>玩家、敌人、弹道、区域、定时器、刷怪、镜头和 HUD 按帧更新。</p></article>
+          <article class="step"><span class="num">04 / RENDER</span><h3>呈现世界</h3><p><code>render.js</code> 深度排序绘制 Canvas；HUD 和菜单绘制在 DOM。</p></article>
+        </div>
+        <div class="codeflow" aria-label="伤害与死亡流程">
+          <div class="flow-row"><code>playerAttack / skillshot / dot</code><span>↓</span><small>普攻、技能、持续伤害等入口</small></div>
+          <div class="flow-row"><code>dealDamage(src, target, amount, type, options)</code><span>↓</span><small>统一进行抗性、增减伤、护盾和生命扣减</small></div>
+          <div class="flow-row"><code>onPlayerDealt / onPlayerHurt / killUnit</code><span>↓</span><small>触发吸血、装备/英雄钩子、复活或死亡</small></div>
+          <div class="flow-row"><code>Enemy.onDeath → drops → Player.pickups</code><span>↓</span><small>奖励进入 run 或玩家背包，并请求 HUD 更新</small></div>
+        </div>
+        <p class="lede" style="margin-top:15px">游玩帧的控制入口是 <a href="../js/main.js"><code>frame()</code> / <code>stepPlay()</code></a>；玩家细节在 <a href="../js/player_update.js"><code>Player.prototype.update()</code></a>，敌人 AI 在 <a href="../js/enemy.js"><code>Enemy.update()</code></a>。伤害统一从 <a href="../js/combat.js"><code>dealDamage()</code></a> 进入。</p>
+      </section>
+
+      <section id="modules">
+        <p class="kicker">05 / CODEBASE INDEX</p>
+        <h2>当前工程模块索引</h2>
+        <p class="lede">以 <a href="../index.html">index.html</a> 实际 script 标签为准。下方覆盖全部 29 个游戏运行脚本；图标选择器的 <code>icon-gallery.js</code> 由另一页面单独加载。</p>
+        <div class="table-wrap module-table">
+          <table>
+            <thead><tr><th>子系统</th><th>源码</th><th>结构职责</th></tr></thead>
+            <tbody>
+              <tr><td>入口与运行时</td><td><a href="../index.html"><code>index.html</code></a> · <a href="../js/i18n.js"><code>i18n.js</code></a> · <a href="../js/core.js"><code>core.js</code></a> · <a href="../js/main.js"><code>main.js</code></a></td><td>页面 DOM、语言、常量/工具、画布/输入/全局 G、启动与主循环。</td></tr>
+              <tr><td>音频与视觉基础</td><td><a href="../js/sound.js"><code>sound.js</code></a> · <a href="../js/sprites.js"><code>sprites.js</code></a> · <a href="../js/sprite_defs.js"><code>sprite_defs.js</code></a> · <a href="../js/fx.js"><code>fx.js</code></a></td><td>Web Audio 合成与 SFX 单例、程序化精灵、精灵注册、粒子/浮字/战斗效果。</td></tr>
+              <tr><td>地图与场景</td><td><a href="../js/map.js"><code>map.js</code></a> · <a href="../js/props.js"><code>props.js</code></a> · <a href="../js/render.js"><code>render.js</code></a></td><td>地形/障碍、A* 与 BFS、区域主题/场景物件、等距 Canvas 深度排序渲染。</td></tr>
+              <tr><td>数据定义</td><td><a href="../js/data_items.js"><code>data_items.js</code></a> · <a href="../js/data_talents.js"><code>data_talents.js</code></a> · <a href="../js/data_enemies.js"><code>data_enemies.js</code></a></td><td>装备及稀有度、天赋与额外技能卡、敌人/首领/阶段定义和缩放。</td></tr>
+              <tr><td>共用实体与战斗</td><td><a href="../js/entity.js"><code>entity.js</code></a> · <a href="../js/combat.js"><code>combat.js</code></a> · <a href="../js/player.js"><code>player.js</code></a> · <a href="../js/player_update.js"><code>player_update.js</code></a></td><td>Unit 基类/血条、伤害及弹道、Player 配置/指令/施法、玩家每帧更新和拾取。</td></tr>
+              <tr><td>敌人与可扩展内容</td><td><a href="../js/enemy.js"><code>enemy.js</code></a> · <a href="../js/boss.js"><code>boss.js</code></a> · <a href="../js/extras.js"><code>extras.js</code></a> · <a href="../js/hero_kestrel.js"><code>hero_kestrel.js</code></a> · <a href="../js/hero_vela.js"><code>hero_vela.js</code></a> · <a href="../js/hero_fortune.js"><code>hero_fortune.js</code></a> · <a href="../js/hero_caitlyn.js"><code>hero_caitlyn.js</code></a> · <a href="../js/hero_aldric.js"><code>hero_aldric.js</code></a></td><td>敌人 AI/死亡掉落、首领技能、自动额外技能、5 个英雄配置和事件钩子。</td></tr>
+              <tr><td>单局与界面</td><td><a href="../js/spawner.js"><code>spawner.js</code></a> · <a href="../js/hud.js"><code>hud.js</code></a> · <a href="../js/ui.js"><code>ui.js</code></a> · <a href="../js/meta.js"><code>meta.js</code></a></td><td>关卡/波次/首领状态机、HUD/小地图、菜单与流程动作、局外进度和奖励。</td></tr>
+              <tr><td>附属素材工具</td><td><a href="../icons.html"><code>icons.html</code></a> · <a href="../js/icon-gallery.js"><code>icon-gallery.js</code></a> · <a href="../assets/game-icons.svg"><code>assets/game-icons.svg</code></a> · <a href="../soundeffect.html"><code>soundeffect.html</code></a></td><td>独立 SVG 图标浏览页及符号表；音效系统的说明/演示页，不进入 index 游戏循环。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 style="margin-top:19px">入口脚本依赖顺序</h3>
+        <p>经典 script 按序执行，彼此共享全局词法作用域，不使用模块 import/export。改变次序前需确认定义时依赖与运行时依赖。</p>
+        <ol class="load-order" aria-label="index.html 脚本加载分组">
+          <li>i18n / core / sound</li><li>sprites / sprite_defs</li><li>props / map / fx</li><li>items / talents / enemies</li>
+          <li>entity / combat</li><li>5 heroes</li><li>extras / player / player_update</li><li>enemy / boss</li>
+          <li>spawner / render / hud / ui / meta</li><li>main / boot</li>
+        </ol>
+        <p class="callout" style="margin-top:14px"><strong>逐文件分析：</strong><a href="render-analysis.html">render.js · 世界绘制</a> · <a href="ui-analysis.html">ui.js · 状态与动作流</a></p>
+      </section>
+
+      <section id="content-model">
+        <p class="kicker">06 / CONTENT MODEL</p>
+        <h2>数据配置如何成为可玩对象</h2>
+        <p class="lede">多数可扩展内容先以普通对象登记，再由通用系统创建运行时对象；英雄特例通过回调组合，而不是为每位英雄派生一套 Player 类。</p>
+        <div class="relmap" aria-label="配置进入运行时的数据链">
+          <article class="rel"><b>HERO_* → HEROES</b><p>五个英雄脚本导出配置，<code>hero_aldric.js</code> 汇总列表；选择界面把选中配置交给 <code>startRun(hero)</code>。</p></article>
+          <article class="rel"><b>hero config → Player</b><p><code>new Player(hero)</code> 保存配置引用。<code>recalc()</code> 汇总基础成长、装备、天赋、局外强化和增益，技能/被动通过配置钩子执行。</p></article>
+          <article class="rel"><b>ENEMY_DEF → Enemy</b><p>阶段敌人池生成 key，<code>Enemy</code> 读取属性、精灵和 AI 类型，按 stage/wave 缩放后放进 <code>G.enemies</code>。</p></article>
+          <article class="rel"><b>BOSS_DEF → Boss</b><p>每阶段指定一个 Boss key。Boss 复用 Enemy 的移动/普通攻击框架，另读取技能轮换、召唤小怪 key。</p></article>
+          <article class="rel"><b>BASE_ITEMS / LEGENDARIES</b><p><code>rollItem()</code> 按来源权重生成随机属性物件；掉落被拾取后进入背包，属性改变时重算 Player stats。</p></article>
+          <article class="rel"><b>TALENTS + EXTRAS</b><p><code>genCards()</code> 混合通用天赋、英雄专属卡和额外技能；<code>applyCard()</code> 写回属性、flag 或技能等级/state。</p></article>
+        </div>
+        <div class="table-wrap" style="margin-top:18px">
+          <table class="hero-table">
+            <thead><tr><th>配置</th><th>作战定位</th><th>关键定制点</th><th>主要扩展钩子</th></tr></thead>
+            <tbody>
+              <tr><td><a href="../js/hero_kestrel.js"><code>HERO_KESTREL</code></a></td><td>远程射手</td><td>Vulnerable 标记、命中消耗、E 位移</td><td><code>tick / onAttack / onKill</code></td></tr>
+              <tr><td><a href="../js/hero_vela.js"><code>HERO_VELA</code></a></td><td>近战决斗家</td><td>Vital 真伤/治疗、格挡、挑战目标</td><td><code>tick / dmgTaken / canAct / onDealt</code></td></tr>
+              <tr><td><a href="../js/hero_fortune.js"><code>HERO_FORTUNE</code></a></td><td>远程枪手</td><td>每目标周期强化普攻、弹射、持续区域、扇形弹幕</td><td><code>onAttack / onKill</code></td></tr>
+              <tr><td><a href="../js/hero_caitlyn.js"><code>HERO_CAITLYN</code></a></td><td>远程狙击手</td><td>穿透衰减、陷阱区域、后坐位移、周期爆头</td><td><code>tick / onAttack / onKill</code></td></tr>
+              <tr><td><a href="../js/hero_aldric.js"><code>HERO_ALDRIC</code></a></td><td>近战重装</td><td>无消耗、击杀成长、防御姿态、旋转攻势与真实伤害处决</td><td><code>statMod / tick / canAttack / dmgTaken / onAttack / onKill</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="callout" style="margin-top:14px"><strong>扩展约定：</strong>英雄的 <code>skills[k]</code> 含冷却、消耗、瞄准方式、说明生成器和 <code>cast(p, tx, ty, rank)</code>；通用 <code>Player.cast()</code> 负责合法性、消耗和冷却。新角色行为应尽量挂在英雄钩子，避免把角色 ID 判断散落进 <code>combat.js</code>。</p>
+      </section>
+
+      <section id="stages">
+        <p class="kicker">07 / WORLD & PROGRESSION</p>
+        <h2>关卡、地图与战斗内容</h2>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>阶段</th><th>区域主题</th><th>敌人池</th><th>首领</th><th>波数</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Farmlands</td><td>thug、archer、boar</td><td>chief / Rourke</td><td>5</td></tr>
+              <tr><td>2</td><td>Village Outskirts</td><td>thug、archer、mage、cannon</td><td>warlock / Varn</td><td>5</td></tr>
+              <tr><td>3</td><td>Whispering Woods</td><td>wolf、wisp、boar、archer</td><td>wolf / Fenrok</td><td>6</td></tr>
+              <tr><td>4</td><td>Petricite Ruins</td><td>golem、wisp、knight、mage</td><td>golem / Colossus</td><td>6</td></tr>
+              <tr><td>5</td><td>Castle Gates</td><td>knight、mage、cannon、archer、golem</td><td>champ / Sir Malrec</td><td>6</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="sequence" style="margin-top:16px" aria-label="阶段状态推进">
+          <article class="step"><span class="num">BREAK</span><span class="sequence-arrow">›</span><h3>休整</h3><p>倒计时结束后开始一波；开局及过波间均使用休整阶段。</p></article>
+          <article class="step"><span class="num">WAVE</span><span class="sequence-arrow">›</span><h3>敌潮</h3><p>队列按间隔批量生成，含精英；波次结束后清理剩余敌人。</p></article>
+          <article class="step"><span class="num">BOSS → CLEAR</span><span class="sequence-arrow">›</span><h3>首领与传送门</h3><p>最后一波清空后生成首领；击败首领转为 clear 并放出传送门。</p></article>
+          <article class="step"><span class="num">CAMP / WIN</span><h3>营地或胜利</h3><p>前四关进入商店并开下一关；第五关通过传送门结束本局。</p></article>
+        </div>
+        <div class="two-col" style="margin-top:18px">
+          <div class="field-group"><h3>地图生成对象</h3><p>44×44 地图包含 <code>tile</code>/<code>block</code> 的 Uint8Array、<code>flow</code> 的 Int16Array、物件列表及预制 tiles。生成道路、边界和障碍群，并从中心做可达性遍历，把不可达空格封起来。</p></div>
+          <div class="field-group"><h3>空间算法分工</h3><p>玩家移动使用 8 向 A*，有视线时直接走单段，路径结果再做 string-pull 平滑；敌人共用以玩家为源的 BFS 距离场选方向。<code>moveUnit()</code> 分轴移动，并用半径外接方形的四角采样阻挡格。</p></div>
+          <div class="field-group"><h3>生物群系与外观</h3><p><code>BIOMES</code> 提供草地、道路、花色、树叶、屋顶、边界和障碍类型。<code>buildTiles()</code>/<code>buildProps()</code> 以小 Canvas 程序化绘制，进入阶段后将整张地面预渲染。</p></div>
+          <div class="field-group"><h3>画面深度与坐标</h3><p><code>core.js</code> 用等距投影转换世界坐标；<code>renderWorld()</code> 把物件、单位、掉落、弹道按 <code>x + y</code> 排序，先画低分辨率 buffer 再 nearest-neighbor 放大。HUD/浮字使用全分辨率 Canvas 或 DOM。</p></div>
+        </div>
+        <p class="callout" style="margin-top:14px"><strong>层次划分：</strong>碰撞、寻路属于模拟层；sprite/props 只提供图像生成；render 只读取对象状态作显示排序。地图随机生成，因此静态截图不能当作关卡数据本身。</p>
+      </section>
+
+      <section id="app-states">
+        <p class="kicker">08 / APPLICATION FLOW</p>
+        <h2>游戏界面状态与输入边界</h2>
+        <p class="lede"><code>G.state</code> 是主状态开关。UI 通过 <code>screen()</code> 渲染 DOM 并把 <code>data-act</code> 映射到 UI_ACT；游戏画布循环只在 play 推进战斗，菜单背景状态单独更新。</p>
+        <div class="relmap" aria-label="游戏状态职责">
+          <article class="rel"><b>title</b><p>主菜单；Canvas 显示漂移背景。进入选人、军械库或帮助。</p></article>
+          <article class="rel"><b>select / armory</b><p>选择英雄开始一局，或读写局外升级。两者仍显示菜单背景。</p></article>
+          <article class="rel"><b>play</b><p>唯一运行完整战斗模拟的状态；键鼠输入路由到 Player 指令/技能。</p></article>
+          <article class="rel"><b>cards</b><p>暂停局内时间等待选天赋；允许数字键选择、T 重抽和升级技能。</p></article>
+          <article class="rel"><b>pause / camp</b><p>暂停或商店 DOM；营地购买、出售、恢复后再开启下一关。</p></article>
+          <article class="rel"><b>over</b><p>展示胜负统计，计算碎片并保存局外结果；可重新开局或进军械库。</p></article>
+        </div>
+        <div class="table-wrap" style="margin-top:16px">
+          <table>
+            <thead><tr><th>输入区域</th><th>按键/动作</th><th>实现入口与结果</th></tr></thead>
+            <tbody>
+              <tr><td>局内移动/攻击</td><td>右键，A + 左键，S</td><td><code>G.onMouseDown / G.onKeyDown</code> 设置 <code>move</code>/<code>attack</code>/<code>amove</code> 指令或清除指令。</td></tr>
+              <tr><td>技能/升级</td><td>Q/W/E/R，Shift 或 Ctrl + Q/W/E/R</td><td>普通按键调 <code>Player.cast()</code>；修饰键尝试 <code>rankUp()</code>。</td></tr>
+              <tr><td>召唤师技能</td><td>D / F</td><td><code>Player.summoner()</code> 执行闪现或治疗/加速并设置冷却。</td></tr>
+              <tr><td>镜头/辅助面板</td><td>Space、Y、Tab、鼠标边缘</td><td>Space 临时居中；Y 切换锁定；Tab 切换属性面板；边缘/方向键平移。</td></tr>
+              <tr><td>弹窗/奖励</td><td>Esc、1/2/3、T</td><td>Esc 暂停/返回；卡片状态用数字选项，T 重抽。</td></tr>
+              <tr><td>小地图</td><td>右键移动，左键拖动</td><td><code>hud.js</code> 将小地图坐标逆投影到世界坐标，或移动镜头。</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="surfaces">
+        <p class="kicker">09 / WORKSPACE SURFACES</p>
+        <h2>工程根目录各页面与资料</h2>
+        <div class="table-wrap surface-table">
+          <table>
+            <thead><tr><th>路径</th><th>类型</th><th>与运行时的关系</th></tr></thead>
+            <tbody>
+              <tr><td><a href="../index.html"><code>index.html</code></a> + <a href="../css/style.css"><code>css/style.css</code></a></td><td>可运行游戏入口/UI 样式</td><td>Canvas 世界、DOM HUD/菜单、经典 script 加载顺序都从这里进入。</td></tr>
+              <tr><td><a href="../icons.html"><code>icons.html</code></a> + <a href="../css/icon-gallery.css"><code>css/icon-gallery.css</code></a> + <a href="../js/icon-gallery.js"><code>js/icon-gallery.js</code></a></td><td>独立素材浏览器</td><td>按分类/文本筛选 121 个 symbol，48 个为一页；调预览颜色/大小/棋盘底色并复制 SVG 引用。</td></tr>
+              <tr><td><a href="../next-character.html"><code>next-character.html</code></a></td><td>独立英雄概念工具</td><td>内嵌 10 个蓝本，支持搜索/定位筛选、查看 QWER/机制、最多 3 人短名单及复制；候选保存在 <code>pixelLeague.nextHeroCandidates.v1</code>，不会注册进游戏 HEROES。</td></tr>
+              <tr><td><a href="../dev-context.html"><code>dev-context.html</code></a> + <a href="../dev-context.md"><code>dev-context.md</code></a></td><td>开发导览/维护上下文</td><td>项目结构和扩展约定的手册；与本页互补，但部分统计及模块表未跟上当前源码。</td></tr>
+              <tr><td><a href="../soundeffect.html"><code>soundeffect.html</code></a> + <a href="../js/sound.js"><code>js/sound.js</code></a></td><td>音效说明 + 运行模块</td><td>说明页记录设计目标和未来事件；运行模块通过 Web Audio 合成命中/击杀反馈，不需要音频素材文件。</td></tr>
+              <tr><td><a href="../Requirement.md"><code>Requirement.md</code></a></td><td>初始需求记录</td><td>简短英文原始需求；当前具体行为应以实际代码为准。</td></tr>
+              <tr><td><a href="../assets/game-icons.svg"><code>assets/game-icons.svg</code></a></td><td>外部 SVG symbol 精灵集</td><td>121 个可复用图标，主要供工具/说明 HTML 的 SVG <code>&lt;use&gt;</code> 使用；游戏人物和地形主要由 Canvas 程序化绘制。</td></tr>
+              <tr><td><a href="entity-analysis.html"><code>docs/entity-analysis.html</code></a></td><td>源码分析页</td><td>本页；从实体模型拓展到内容、地图、界面和旁支工具的工程索引。</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="two-col" style="margin-top:16px">
+          <div class="field-group"><h3>偏好与进度存储彼此独立</h3><p><code>pixelLeague.meta.v1</code> 保存碎片/永久升级/战绩；<code>pixelLeague.locale.v1</code> 保存语言；<code>pixelLeague.nextHeroCandidates.v1</code> 只供角色概念页使用。三者不属于同一个档案对象。</p></div>
+          <div class="field-group"><h3>音效现状与说明页的边界</h3><p><code>SoundSystem</code> 有 <code>register/play</code> 扩展接口及预注册事件，但战斗代码目前直接调用 <code>playAttackHit()</code>/<code>playKill()</code>；<code>skillCast/heal/pickup/uiClick</code> 在说明页是示例或计划，并未接入实际流程。</p></div>
+        </div>
+      </section>
+
+      <section id="maintenance">
+        <p class="kicker">10 / MAINTENANCE NOTES</p>
+        <h2>从当前实现可见的约束</h2>
+        <div class="notes">
+          <article class="note"><b>字段不是封闭 schema</b><p><code>Unit</code> 建立公共字段，但英雄钩子和 Boss/Enemy 会动态添加状态；<code>Player.st</code> 也是运行时重算的普通对象。加字段时要检查写入、每帧更新、清理和渲染的完整生命周期。</p></article>
+          <article class="note"><b>Player 更新分散在两个文件</b><p><code>player.js</code> 先声明 class，<code>player_update.js</code> 再补充 <code>Player.prototype.update/itemTick/pickups</code>。这是脚本加载顺序的一部分。</p></article>
+          <article class="note"><b>表示层与规则层共用引用</b><p>渲染器直接读取实体字段和全局集合，HUD 也读取 Player 的等级、技能、装备和阶段状态。改名或变更对象形状时需同步调用方。</p></article>
+          <article class="note"><b>菜单背景使用占位玩家</b><p><code>initBackdrop()</code> 临时赋给 <code>G.player</code> 一个普通对象，不是 <code>Unit</code> 或 <code>Player</code>；后台状态下不可假定所有实体字段/方法都存在。</p></article>
+          <article class="note"><b>开发导览存在内容漂移</b><p><code>dev-context.html</code> 仍写 26 个脚本，且模块表只列 Kestrel/Vela/Aldric；<code>dev-context.md</code> 也未列 Fortune、Caitlyn 与 <code>sound.js</code>。当前入口实际加载 29 个游戏脚本，HEROES 汇总 5 位英雄；图标页另载 <code>icon-gallery.js</code>。</p></article>
+          <article class="note"><b>验证目前以手动为主</b><p>仓库没有自动化测试/构建配置。可对改动脚本执行 <code>node --check js/&lt;file&gt;.js</code>，再实际验证开局、升级、战斗、拾取、关卡转场和结算。</p></article>
+        </div>
+      </section>
+      <footer><span>PIXEL LEAGUE / ENTITY & CODEBASE ANALYSIS</span><span>按当前工作区源码整理</span></footer>
+    </main>
+  </div>
+</body>
+</html>

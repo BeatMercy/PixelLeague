@@ -58,6 +58,8 @@ function drawCannon(x, f, c) {
 const SPRITE_CFG = {
   kestrel: { type: 'h', skin: '#f0c8a0', hair: '#3a2416', hairStyle: 'pony', body: '#3a5fa8', legs: '#2a3a5a', boots: '#5a3a22', trim: '#e8c050', cape: '#6a8ad0', weapon: 'bow', wcol: '#8a5a2a' },
   vela: { type: 'h', skin: '#f4d0b0', hair: '#24203a', hairStyle: 'short', body: '#d8dce8', legs: '#3a3a5a', boots: '#2a2a3a', trim: '#4060c0', weapon: 'rapier', wcol: '#b8c8e0', head: 'band' },
+  fortune: { type: 'h', skin: '#f0c8a0', hair: '#9a2430', hairStyle: 'long', body: '#b83a45', legs: '#30243a', boots: '#482632', trim: '#f0c050', weapon: 'pistols', wcol: '#7a8290', head: 'band' },
+  caitlyn: { type: 'h', skin: '#f0c8a0', hair: '#5a3825', hairStyle: 'long', body: '#527aa3', legs: '#35445a', boots: '#4a3828', trim: '#d8c080', cape: '#405c7a', weapon: 'bow', wcol: '#b09a70', head: 'band' },
   aldric: { type: 'h', skin: '#e8c098', head: 'helm', helm: '#a8b0c0', plume: '#3a5fa8', body: '#3a5fa8', legs: '#6a7080', boots: '#4a4a5a', trim: '#e8c050', cape: '#2a4a90', weapon: 'sword', wcol: '#c8d0e0', bulk: 1, shield: '#3a5fa8' },
   thug: { type: 'h', skin: '#d8a880', head: 'hood', hood: '#6a4a3a', body: '#8a6a4a', legs: '#4a3a2a', boots: '#2a1a10', weapon: 'club', wcol: '#7a5a3a' },
   archer: { type: 'h', skin: '#d8a880', head: 'hood', hood: '#3a5a2a', body: '#4a6a3a', legs: '#3a3a2a', boots: '#2a1a10', weapon: 'bow', wcol: '#6a4a2a' },

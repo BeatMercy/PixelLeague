@@ -3,7 +3,7 @@
 const HERO_KESTREL = {
   id: 'kestrel', name: 'Kestrel', title: 'Wings of the Dawnguard', role: 'Marksman · Ranged', spr: 'kestrel', color: '#6a8ad0',
   ranged: true, projCol: '#f0e0a0',
-  base: { hp: 560, mp: 320, ad: 58, armor: 24, mr: 28, as: 0.68, ms: 3.2, range: 5.2, regen: 1.6, mregen: 2.2 },
+  base: { hp: 560, mp: 320, ad: 58, armor: 24, mr: 28, as: 0.68, ms: 2.72, range: 5.2, regen: 1.6, mregen: 2.2 },
   grow: { hp: 90, mp: 25, ad: 3.2, armor: 3.5, mr: 1.4, as: 3.0, regen: 0.15, mregen: 0.15 },
   passive: { name: 'Harrier', icon: '🦅', desc: 'Your hawk periodically marks the nearest enemy as <b>Vulnerable</b>. Attacking a Vulnerable enemy deals bonus physical damage and consumes the mark.' },
   skills: {

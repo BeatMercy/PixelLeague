@@ -107,6 +107,18 @@ function drawWeapon(P, c, hx, hy, atk) {
       if (atk) { P(w, hx + 2, hy - 1, 9, 2); P(wl, hx + 2, hy - 1, 9, 1); P('#e8c050', hx + 1, hy - 2, 1, 4); }
       else { P(w, hx, hy - 12, 2, 11); P(wl, hx, hy - 12, 1, 11); P('#e8c050', hx - 1, hy - 1, 4, 1); P('#5a3a22', hx, hy + 1, 1, 2); }
       break;
+    case 'pistols':
+      if (atk) {
+        P(wd, hx + 1, hy - 4, 3, 2); P(w, hx + 3, hy - 5, 6, 2); P(wl, hx + 5, hy - 5, 3, 1);
+        P(wd, hx + 2, hy - 2, 2, 3); P('#ffd070', hx + 9, hy - 4, 1, 1);
+        P(wd, hx - 6, hy + 1, 4, 2); P(w, hx - 7, hy, 3, 2); P(wl, hx - 6, hy, 2, 1);
+        P(wd, hx - 5, hy + 3, 2, 2); P('#ffd070', hx - 8, hy + 1, 1, 1);
+      } else {
+        P(wd, hx - 1, hy - 5, 3, 2); P(w, hx + 1, hy - 6, 5, 2); P(wl, hx + 3, hy - 6, 2, 1);
+        P(wd, hx + 1, hy - 3, 2, 3); P(wd, hx - 7, hy + 1, 4, 2);
+        P(w, hx - 8, hy, 3, 2); P(wl, hx - 7, hy, 2, 1); P(wd, hx - 6, hy + 3, 2, 2);
+      }
+      break;
     case 'staff': {
       const sx = atk ? hx + 2 : hx;
       P(w, sx, hy - 10, 1, 16);

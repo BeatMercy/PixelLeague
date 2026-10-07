@@ -22,6 +22,7 @@ function dealDamage(src, t, amt, type = 'physical', o = {}) {
     const col = t === P ? '#ff5050' : o.crit ? '#ffd030' : type === 'magic' ? '#c890ff' : type === 'true' ? '#ffffff' : '#f0e8e0';
     if (!o.dot || amt >= 4) ftext(t.x, t.y, o.crit ? amt + '!' : amt, col, !!o.crit);
   }
+  if (src && src !== t) SFX.playAttackHit(src, t, type, amt);
   if (src === P) onPlayerDealt(t, amt, type, o);
   if (t === P && src && src.alive && !o.dot) onPlayerHurt(src, amt, o);
   if (t.hp <= 0) killUnit(t, src);
@@ -64,6 +65,7 @@ function killUnit(u, src) {
     u.hp = 0; u.alive = false; G.onPlayerDead && G.onPlayerDead(src); return;
   }
   u.hp = 0; u.alive = false;
+  SFX.playKill(u, src);
   if (u.onDeath) u.onDeath(src);
   if (P.hero.onKill) P.hero.onKill(P, u);
 }
@@ -71,7 +73,10 @@ function gainXP(v) {
   const p = G.player;
   if (p.level >= 18) { G.run.gold += Math.ceil(v / 10); return; }
   p.xp += Math.round(v * (1 + (p.st.xpPct || 0) / 100));
-  while (p.level < 18 && p.xp >= XP_REQ(p.level)) { p.xp -= XP_REQ(p.level); p.level++; G.onLevelUp && G.onLevelUp(); }
+  while (p.level < 18 && p.xp >= XP_REQ(p.level)) {
+    p.xp -= XP_REQ(p.level); p.level++; p.recalc();
+    G.onLevelUp && G.onLevelUp();
+  }
   if (p.level >= 18) p.xp = 0;
 }
 function enemiesNear(x, y, r) { return G.enemies.filter(e => e.alive && distXY(x, y, e.x, e.y) < r + e.r); }

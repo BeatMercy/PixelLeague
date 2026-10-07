@@ -58,6 +58,15 @@ function drawFxTop() {
       ctx.globalAlpha = t; ctx.strokeStyle = f.col; ctx.lineWidth = 2;
       const cx = toVX(f.x, f.y), cy = toVY(f.x, f.y, 8), sa = Math.atan2(isoY(Math.cos(f.ang), Math.sin(f.ang)), isoX(Math.cos(f.ang), Math.sin(f.ang)));
       ctx.beginPath(); ctx.ellipse(cx, cy, f.r * ISO_RX, f.r * ISO_RY, 0, sa - 1.1 + (1 - t), sa + 1.1 - (1 - t) * 0.5); ctx.stroke(); ctx.lineWidth = 1;
+    } else if (f.type === 'hpbar-break') {
+      const age = f.max - f.life, cx = toVX(f.x, f.y) + f.offsetX, cy = toVY(f.x, f.y, f.z) - f.yOff;
+      ctx.globalAlpha = t;
+      for (const p of f.pieces) {
+        ctx.save(); ctx.translate(cx + p.x + p.vx * age, cy + p.vy * age); ctx.rotate(p.angle + p.spin * age);
+        ctx.fillStyle = '#0a0d13'; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.strokeStyle = '#f5d98b'; ctx.lineWidth = 1; ctx.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        ctx.restore();
+      }
     }
   }
   ctx.globalAlpha = 1;

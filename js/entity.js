@@ -41,30 +41,68 @@ class Unit {
   }
   animFrame() {
     if (this.atkAnim > 0) return 3;
-    if (this.moving) return 1 + (Math.floor(this.animT * 8) & 1);
+    if (this.moving) {
+      const phase = this.walkPhase === undefined ? this.animT * 8 : this.walkPhase;
+      return 1 + (Math.floor(phase) & 1);
+    }
     return 0;
   }
   faceTo(x) { if (Math.abs(x - this.x) > 0.01) this.face = x < this.x ? -1 : 1; }
 }
 
 // HP bar drawn on the full-res canvas
+function hpBarMetrics(w) {
+  const bw = Math.min(96, w * 1.2) * SCALE * 0.8;
+  const bh = Math.max(5.6, 5.6 * SCALE);
+  const levelBoxW = Math.max(12.8, 14.4 * SCALE);
+  const pad = Math.max(1.6, 1.6 * SCALE);
+  return { bw, bh, levelBoxW, pad };
+}
+function spawnHpBarBreak(u, w) {
+  const { bw, bh, levelBoxW, pad } = hpBarMetrics(w);
+  const frameW = (bw + levelBoxW + pad * 3) / SCALE;
+  const frameH = (bh + pad * 2) / SCALE;
+  const count = 6;
+  const pieces = [];
+  for (let i = 0; i < count; i++) {
+    pieces.push({
+      x: (i + 0.5) * frameW / count - frameW / 2,
+      vx: rand(-22, 22), vy: rand(-18, 8),
+      angle: rand(-0.12, 0.12), spin: rand(-3, 3),
+      w: frameW / count + 0.5, h: frameH,
+    });
+  }
+  G.fx.push({ type: 'hpbar-break', x: u.x, y: u.y, z: u.z || 0, yOff: u.spr.ay + 4, offsetX: -(levelBoxW + pad) / (2 * SCALE), life: 0.42, max: 0.42, pieces });
+}
 function drawHpBar(u, w, col, yOff) {
   const x = toVX(u.x, u.y) * SCALE, y = (toVY(u.x, u.y, u.z) - yOff) * SCALE;
   const W = w * SCALE, H = Math.max(3, SCALE + 1), max = u.st.hp;
-  if (u === G.player) {
-    const bw = Math.min(96, w * 1.2) * SCALE * 0.8;
-    const bh = Math.max(5.6, 5.6 * SCALE);
+  if (u === G.player || u.elite) {
+    const { bw, bh, levelBoxW, pad } = hpBarMetrics(w);
     const leftX = x - bw / 2;
-    const levelBoxW = Math.max(12.8, 14.4 * SCALE);
-    const pad = Math.max(1.6, 1.6 * SCALE);
     const borderBoxW = bw + levelBoxW + pad * 3;
     sctx.fillStyle = '#0a0d13'; sctx.fillRect(leftX - levelBoxW - pad * 2, y - bh / 2 - pad, borderBoxW, bh + pad * 2);
     sctx.strokeStyle = '#f5d98b'; sctx.lineWidth = Math.max(1.2, 1.2 * SCALE / 3); sctx.strokeRect(leftX - levelBoxW - pad * 2, y - bh / 2 - pad, borderBoxW, bh + pad * 2);
     sctx.fillStyle = '#1b2a34'; sctx.fillRect(leftX - levelBoxW, y - bh / 2, levelBoxW, bh);
-    sctx.fillStyle = '#f7e2a8'; sctx.font = `${Math.max(6.4, 6.4 * SCALE)}px VT323`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText(String(u.level || 1), leftX - levelBoxW / 2, y);
+    if (!u.elite) {
+      sctx.fillStyle = '#f7e2a8'; sctx.font = `${Math.max(6.4, 6.4 * SCALE)}px VT323`; sctx.textAlign = 'center'; sctx.textBaseline = 'middle'; sctx.fillText(String(u.level || 1), leftX - levelBoxW / 2, y);
+    }
     sctx.fillStyle = '#2b1a11'; sctx.fillRect(leftX, y - bh / 2, bw, bh);
     const tot = Math.max(max, u.hp + u.shield);
+    const hpRatio = clamp(u.hp / max, 0, 1);
+    if (!u._hpBarTrail) u._hpBarTrail = { hp: hpRatio, trail: hpRatio, time: G.time };
+    const trailState = u._hpBarTrail;
+    const elapsed = Math.max(0, G.time - trailState.time);
+    if (hpRatio < trailState.hp) trailState.trail = Math.max(trailState.trail, trailState.hp);
+    else if (hpRatio > trailState.hp) trailState.trail = hpRatio;
+    trailState.hp = hpRatio;
+    trailState.trail = Math.max(hpRatio, trailState.trail - elapsed * 1.35);
+    trailState.time = G.time;
+    const healthW = bw * max / tot;
+    const hpW = healthW * hpRatio;
+    const trailW = healthW * trailState.trail;
     sctx.fillStyle = col; sctx.fillRect(leftX, y - bh / 2, bw * u.hp / tot, bh);
+    if (trailW > hpW) { sctx.fillStyle = '#f4d34f'; sctx.fillRect(leftX + hpW, y - bh / 2, trailW - hpW, bh); }
     if (u.shield > 0) { sctx.fillStyle = '#dfe7ff'; sctx.fillRect(leftX + bw * u.hp / tot, y - bh / 2, bw * u.shield / tot, bh); }
     for (let hpMark = 100; hpMark < max; hpMark += 100) {
       if (hpMark % 1000 === 0) continue;

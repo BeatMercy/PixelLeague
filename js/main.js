@@ -38,7 +38,11 @@ function stepPlay(dt) {
   if (mouse.right && p.alive && !G.hoverEnemy && (IN.rmbT -= dt) <= 0) { IN.rmbT = 0.12; p.moveTo(mouse.wx, mouse.wy); }
   if (p.alive) p.update(dt);
   for (const e of G.enemies) if (e.alive) e.update(dt);
-  for (const e of G.enemies) if (!e.alive && !e.gone) { e.gone = true; burst(e.x, e.y, [e.boss ? '#ffd040' : '#a02020', '#3a1a1a'], e.boss ? 40 : 8, 2, 8, 0.6); }
+  for (const e of G.enemies) if (!e.alive && !e.gone) {
+    e.gone = true;
+    if (e.elite && e.spawnT <= 0) spawnHpBarBreak(e, 22);
+    burst(e.x, e.y, [e.boss ? '#ffd040' : '#a02020', '#3a1a1a'], e.boss ? 40 : 8, 2, 8, 0.6);
+  }
   G.enemies = G.enemies.filter(e => e.alive);
   tickProjs(dt);
   for (let i = G.zones.length - 1; i >= 0; i--) { const z = G.zones[i]; z.t -= dt; if (z.tick) z.tick(z, dt); if (z.t <= 0) G.zones.splice(i, 1); }

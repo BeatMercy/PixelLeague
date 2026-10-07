@@ -23,7 +23,7 @@ class Player extends Unit {
     Object.assign(this, { hero, spr: SPR[hero.spr], level: 1, xp: 0, ranks: { Q: 0, W: 0, E: 0, R: 0 }, skillPts: 1,
       cd: { Q: 0, W: 0, E: 0, R: 0, D: 0, F: 0 }, cdMax: { Q: 1, W: 1, E: 1, R: 1, D: 1, F: 1 }, items: [], tstats: {}, mstats: metaStats(),
       buffs: {}, extras: {}, extraState: {}, maxExtras: 4, taken: {}, flags: {}, passives: {}, order: null, path: [], repath: 0,
-      dash: null, channel: 0, _kk: 0, _ss: 0, spellblade: 0, partCol: '#c03030' });
+      dash: null, channel: 0, walkPhase: 0, _kk: 0, _ss: 0, spellblade: 0, partCol: '#c03030' });
     this.recalc(); this.hp = this.st.hp; this.mp = this.st.mp;
   }
   recalc() {
@@ -64,9 +64,16 @@ class Player extends Unit {
   dashTo(x, y, spd, onEnd, maxT = 0.5) { this.cancelWindup(); this.dash = { x, y, spd, onEnd, t: maxT }; }
   stepToward(tx, ty, dt, spd = this.speed) {
     const dx = tx - this.x, dy = ty - this.y, d = Math.hypot(dx, dy), s = spd * dt;
-    this.faceTo(tx); this.moving = true;
-    if (d <= s) { moveUnit(this, dx, dy); return true; }
-    moveUnit(this, dx / d * s, dy / d * s); return false;
+    this.faceTo(tx);
+    const move = (mx, my) => {
+      const x = this.x, y = this.y;
+      moveUnit(this, mx, my);
+      const traveled = distXY(x, y, this.x, this.y);
+      this.moving = traveled > 0.001;
+      this.walkPhase += traveled / 1.2;
+    };
+    if (d <= s) { move(dx, dy); return true; }
+    move(dx / d * s, dy / d * s); return false;
   }
   followPath(dt) {
     if (!this.path.length) return true;

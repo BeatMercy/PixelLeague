@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#151914">
+  <title>Pixel League | ui.js 分析</title>
+  <style>
+    :root { color-scheme:dark; --bg:#151914; --panel:#1d241d; --ink:#f0eee3; --muted:#b0b9aa; --faint:#879487; --line:#3d4b40; --green:#b8d18b; --teal:#86c7b1; --gold:#edc27b; --coral:#e69a7d; --blue:#91bce0; --mono:"Cascadia Code",Consolas,monospace; --sans:"Segoe UI","Microsoft YaHei UI",sans-serif; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; scroll-padding-top:72px; }
+    body { margin:0; min-width:320px; color:var(--ink); background:var(--bg); background-image:linear-gradient(rgba(206,226,197,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(206,226,197,.025) 1px,transparent 1px); background-size:28px 28px; font:14px/1.7 var(--sans); }
+    a { color:var(--teal); text-decoration-color:rgba(134,199,177,.45); text-underline-offset:3px; }
+    code { color:#e9d29f; font:.92em var(--mono); }
+    .top { position:sticky; top:0; z-index:5; min-height:56px; padding:0 max(4vw,16px); display:flex; justify-content:space-between; align-items:center; gap:16px; border-bottom:1px solid var(--line); background:rgba(21,25,20,.96); backdrop-filter:blur(10px); }
+    .brand { color:var(--ink); text-decoration:none; font-size:11px; font-weight:700; white-space:nowrap; }
+    .brand b { display:inline-grid; width:26px; height:26px; margin-right:8px; place-items:center; color:#1a2119; background:var(--green); font:10px var(--mono); }
+    .links { display:flex; gap:16px; font:10px var(--mono); white-space:nowrap; }
+    .layout { width:min(1240px,92vw); margin:auto; display:grid; grid-template-columns:174px minmax(0,1fr); gap:38px; }
+    aside { position:sticky; top:72px; align-self:start; max-height:calc(100vh - 84px); overflow:auto; padding:22px 0; }
+    aside b { display:block; margin:0 0 8px 9px; color:var(--gold); font:9px var(--mono); }
+    aside a { display:block; padding:5px 9px; color:var(--muted); border-left:1px solid transparent; text-decoration:none; font-size:11px; }
+    aside a:hover { border-color:var(--green); color:var(--ink); }
+    main { min-width:0; padding:30px 0 64px; }
+    .hero { padding:27px 30px; border:1px solid #52634e; background:linear-gradient(115deg,#263329,#202823 60%,#302c22); }
+    .eyebrow,.kicker { margin:0; color:var(--green); font:9px var(--mono); letter-spacing:.1em; }
+    h1 { margin:9px 0 8px; font-size:clamp(30px,5vw,46px); line-height:1.12; }
+    h1 span { color:var(--gold); }
+    .hero p:last-child,.lede { max-width:820px; margin:0; color:#c8d0c3; }
+    .metrics { display:grid; grid-template-columns:repeat(4,1fr); margin:16px 0 38px; border-block:1px solid var(--line); }
+    .metric { padding:11px 14px; border-right:1px solid var(--line); }
+    .metric:last-child { border:0; }
+    .metric b { display:block; color:var(--gold); font:17px var(--mono); font-weight:500; }
+    .metric span { color:var(--muted); font-size:10px; }
+    section { margin:38px 0; }
+    .kicker { margin-bottom:5px; color:var(--coral); }
+    h2 { margin:0 0 12px; font-size:23px; line-height:1.25; }
+    h3 { margin:0 0 6px; font-size:14px; }
+    p { color:#c2cbbf; }
+    .contract { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; margin-top:16px; }
+    .contract article { min-height:108px; padding:12px; border-top:2px solid var(--green); background:var(--panel); }
+    .contract article:nth-child(2) { border-color:var(--teal); }
+    .contract article:nth-child(3) { border-color:var(--gold); }
+    .contract article:nth-child(4) { border-color:var(--coral); }
+    .contract b { display:block; margin-bottom:5px; color:var(--green); font:10px var(--mono); }
+    .contract p { margin:0; color:var(--muted); font-size:11px; }
+    .state-map { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:9px; }
+    .state { position:relative; min-height:105px; padding:12px; border:1px solid var(--line); border-left:3px solid var(--green); background:var(--panel); }
+    .state:nth-child(4n+2) { border-left-color:var(--blue); }
+    .state:nth-child(4n+3) { border-left-color:var(--gold); }
+    .state:nth-child(4n) { border-left-color:var(--coral); }
+    .state code { display:block; margin-bottom:4px; font-size:11px; }
+    .state p { margin:0; color:var(--muted); font-size:11px; }
+    .table-wrap { overflow-x:auto; border-top:1px solid var(--line); }
+    table { width:100%; border-collapse:collapse; text-align:left; }
+    th { padding:8px 10px; color:var(--green); border-bottom:1px solid #53634f; font:9px var(--mono); font-weight:500; }
+    td { padding:8px 10px; color:#c3cbbf; border-bottom:1px solid #303a32; vertical-align:top; font-size:12px; }
+    td:first-child { white-space:nowrap; }
+    .flow { display:grid; gap:7px; max-width:880px; margin:16px auto; }
+    .flow-row { display:grid; grid-template-columns:minmax(130px,.7fr) 25px minmax(0,1.3fr); align-items:center; gap:9px; }
+    .flow-row code { display:block; padding:8px 10px; border:1px solid var(--line); background:var(--panel); }
+    .flow-row i { color:var(--gold); font:15px var(--mono); text-align:center; }
+    .flow-row span { color:var(--muted); font-size:11px; }
+    .callout { padding:13px 15px; border-left:2px solid var(--teal); background:#202821; }
+    .columns { display:grid; grid-template-columns:1fr 1fr; gap:11px; }
+    .note { padding:12px 14px; border-top:1px solid var(--line); background:rgba(29,36,29,.7); }
+    .note b { color:var(--green); font:11px var(--mono); }
+    .note p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+    footer { display:flex; justify-content:space-between; gap:12px; padding:16px 0; color:var(--faint); border-top:1px solid var(--line); font:9px var(--mono); }
+    @media(max-width:880px) { .layout { grid-template-columns:1fr; gap:0; } aside { position:relative; top:auto; display:flex; gap:3px; max-height:none; overflow:auto; padding:10px 0 0; white-space:nowrap; } aside b { display:none; } aside a { padding:5px 8px; border:1px solid var(--line); } main { padding-top:18px; } }
+    @media(max-width:620px) { .top { min-height:50px; padding-inline:4vw; } .brand { font-size:9px; } .links { gap:8px; font-size:8px; } .layout { width:92vw; } .hero { padding:21px 18px; } .metrics { grid-template-columns:1fr 1fr; } .metric:nth-child(2) { border-right:0; } .metric:nth-child(-n+2) { border-bottom:1px solid var(--line); } .contract,.columns { grid-template-columns:1fr 1fr; } .state-map { grid-template-columns:1fr 1fr; } .flow-row { grid-template-columns:1fr 18px; } .flow-row span { grid-column:1 / -1; padding:0 10px 5px; } footer { flex-direction:column; } }
+    @media(max-width:390px) { .contract,.columns { grid-template-columns:1fr; } }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="../index.html"><b>PL</b>PIXEL LEAGUE / UI ANALYSIS</a>
+    <nav class="links" aria-label="分析页面"><a href="entity-analysis.html">工程总览</a><a href="render-analysis.html">Render 模块</a></nav>
+  </header>
+  <div class="layout">
+    <aside aria-label="页面目录"><b>UI MAP</b><a href="#contract">模块边界</a><a href="#dispatch">模板与事件</a><a href="#states">状态图</a><a href="#screens">屏幕清单</a><a href="#flows">关键流程</a><a href="#keyboard">键盘路由</a><a href="#storage">持久化/本地化</a><a href="#coupling">边界与约束</a></aside>
+    <main>
+      <header class="hero">
+        <p class="eyebrow">MODULE ANALYSIS / js/ui.js</p>
+        <h1>界面状态与<br><span>动作路由</span></h1>
+        <p><code>ui.js</code> 管全屏 DOM 页面和流程动作，不负责逐帧 HUD 绘制。它把当前页面保存在 UI 中，以 <code>data-act</code> 把用户输入路由到 <code>UI_ACT</code>，并通过 <code>G.state</code> 控制游戏模拟是否推进。</p>
+      </header>
+      <div class="metrics">
+        <div class="metric"><b>UI</b><span>临时页面/商店状态对象</span></div>
+        <div class="metric"><b>screen()</b><span>模板注入 + 绑定动作/tooltip</span></div>
+        <div class="metric"><b>UI_ACT</b><span>声明式动作名到 handler</span></div>
+        <div class="metric"><b>uiKey()</b><span>非 play 状态快捷键入口</span></div>
+      </div>
+
+      <section id="contract">
+        <p class="kicker">01 / MODULE CONTRACT</p>
+        <h2>UI 对象保存什么</h2>
+        <div class="contract">
+          <article><b>cards / onCardsDone</b><p>当前候选卡与选卡完成后的可选回调。</p></article>
+          <article><b>shop / rerollCost</b><p>营地商品数组、递增刷新价格和 wisdom 购买标记。</p></article>
+          <article><b>ended</b><p>结算幂等保护，避免同一局重复发放结算/碎片。</p></article>
+          <article><b>html / screenClass</b><p>最近一次屏幕模板和 class；语言切换时重建可见屏幕。</p></article>
+        </div>
+        <p class="callout" style="margin-top:12px">HUD、tooltip、技能栏不属于这个 UI 状态对象：HUD 更新在 <code>hud.js</code>，DOM 外壳定义于 <code>index.html</code>，样式主要在 <code>css/style.css</code>。</p>
+      </section>
+
+      <section id="dispatch">
+        <p class="kicker">02 / TEMPLATE & EVENT ROUTING</p>
+        <h2><code>screen()</code> 的渲染/交互契约</h2>
+        <div class="flow" aria-label="screen 函数流程">
+          <div class="flow-row"><code>screen(html, cls)</code><i>↓</i><span>记录 UI.html / UI.screenClass；设置 #screen class。</span></div>
+          <div class="flow-row"><code>I18N.html(html) → innerHTML</code><i>↓</i><span>按当前语言翻译页面模板，再替换 DOM 内容。</span></div>
+          <div class="flow-row"><code>[data-act] → UI_ACT[name]</code><i>↓</i><span>点击时传 data-arg 和 button；handler 执行业务流程。</span></div>
+          <div class="flow-row"><code>[data-tip] → bindTip()</code><i>↓</i><span>复用 HUD tooltip 机制；页面关闭时清除内容并隐藏提示。</span></div>
+        </div>
+        <p class="lede">每次重新渲染都会替换 <code>#screen</code> 子树并重绑事件。动作名与动作实现分离：模板可读出交互意图，具体逻辑集中在 <code>UI_ACT</code>。按钮 helper <code>btn()</code> 只生成带 <code>data-act/data-arg</code> 的标记，不独自执行行为。</p>
+      </section>
+
+      <section id="states">
+        <p class="kicker">03 / STATE GRAPH</p>
+        <h2>界面状态如何影响模拟</h2>
+        <div class="state-map" aria-label="游戏与界面状态职责">
+          <article class="state"><code>title</code><p>标题与菜单；主循环可显示漂移背景。</p></article>
+          <article class="state"><code>select</code><p>挑选 HEROES；选择后 startRun。</p></article>
+          <article class="state"><code>play</code><p>stepPlay 更新战斗、刷怪、相机与 HUD。</p></article>
+          <article class="state"><code>cards</code><p>升级选择期间不调用 stepPlay；选完返回 play。</p></article>
+          <article class="state"><code>pause</code><p>暂停覆盖页；Esc 恢复，放弃则结算。</p></article>
+          <article class="state"><code>camp</code><p>营地商店；购买/出售/休整后开始下一关。</p></article>
+          <article class="state"><code>armory</code><p>局外永久强化；读写 meta localStorage。</p></article>
+          <article class="state"><code>over</code><p>胜负结算、碎片奖励、重开/返回标题。</p></article>
+        </div>
+        <p class="callout" style="margin-top:13px"><code>frame()</code> 仅在 <code>G.state === 'play'</code> 时调用 <code>stepPlay(dt)</code>；title/select/armory 推进背景动画；cards/pause/camp/over 不推进战斗世界，但若有地图仍会绘制静止世界画面。</p>
+      </section>
+
+      <section id="screens">
+        <p class="kicker">04 / SCREEN INVENTORY</p>
+        <h2>页面构建函数与所用数据</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>页面/函数</th><th>主要输入</th><th>动作/副作用</th></tr></thead>
+          <tbody>
+            <tr><td><code>showTitle()</code></td><td><code>loadMeta()</code> 的战绩/碎片，HEROES 精灵</td><td>入口到选择、军械库、帮助。</td></tr>
+            <tr><td><code>showHelp()</code></td><td>STAGES 数量、操作说明</td><td>可指定返回 title 或暂停页。</td></tr>
+            <tr><td><code>showSelect()</code></td><td>HEROES、技能说明、被动、基础属性</td><td>英雄卡 <code>pick</code> 调用 <code>startRun(hero)</code>。</td></tr>
+            <tr><td><code>openCards / renderCards</code></td><td><code>genCards()</code>、pendingCards、rerolls、skillPts</td><td>选卡调用 <code>applyCard()</code>；可连续处理升级，并支持完成回调。</td></tr>
+            <tr><td><code>openCamp / renderCamp</code></td><td>Player、gold、shop、next STAGES/BIOMES</td><td>恢复 HP/MP、清冷却、回收金币；买卖/刷新/求智慧/下一阶段。</td></tr>
+            <tr><td><code>showPause()</code></td><td>当前 G.state</td><td>仅 play 可打开，除 force；显示恢复、帮助、放弃。</td></tr>
+            <tr><td><code>endRun(win)</code></td><td>run 统计、Player、<code>awardShards()</code></td><td>一次性结算并构造胜败摘要，隐藏 HUD。</td></tr>
+            <tr><td><code>showArmory()</code></td><td>META_UP、loadMeta、metaCost</td><td>买永久升级后刷新页面内容。</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="flows">
+        <p class="kicker">05 / IMPORTANT FLOWS</p>
+        <h2>两条有回调的 UI 流程</h2>
+        <div class="columns">
+          <article class="note"><b>升级卡流程</b><p><code>main.stepPlay()</code> 发现 pendingCards → <code>openCards()</code> 切到 cards → 玩家选卡 → <code>applyCard()</code> 改 Player → 减少待选数 → 还有待选就再生成卡 → 最后关闭屏幕回 play。</p></article>
+          <article class="note"><b>智慧购买流程</b><p>营地点击 wisdom → 扣金币、置 UI.wisdom、防止重复购买、pendingCards +1 → <code>openCards(renderCamp)</code> → 选卡完执行回调重新画营地，不直接返回 play。</p></article>
+          <article class="note"><b>商店购买</b><p>校验库存、商品和金币 → gold 扣款 → item 放入 Player.items → shop slot 置空 → <code>recalc()</code> 并设置 HUD dirty → 重画 camp。</p></article>
+          <article class="note"><b>关卡过门</b><p>该模块不决定首领何时死亡；spawner 进入 clear 后玩家触门会调 <code>openCamp()</code> 或第五关 <code>endRun(true)</code>。UI 负责营地的购买与继续。</p></article>
+        </div>
+      </section>
+
+      <section id="keyboard">
+        <p class="kicker">06 / KEYBOARD ROUTING</p>
+        <h2>键盘事件的分流边界</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>事件来源</th><th>状态/按键</th><th>结果</th></tr></thead>
+          <tbody>
+            <tr><td><code>core.js → G.onKeyDown</code></td><td>G.state 为 play</td><td><code>main.js</code> 接收移动、攻击、施法、暂停等局内输入。</td></tr>
+            <tr><td><code>core.js → G.onKeyDown</code></td><td>其他状态</td><td>main 将事件交给 <code>uiKey(e)</code>。</td></tr>
+            <tr><td><code>uiKey()</code></td><td>cards: 1/2/3、T、Shift+QWER</td><td>选择卡片、重抽、升级技能并重画卡片页。</td></tr>
+            <tr><td><code>uiKey()</code></td><td>pause: Esc</td><td>恢复 play。</td></tr>
+            <tr><td><code>uiKey()</code></td><td>title: Enter；select/armory: Esc</td><td>开始选英雄，或返回标题。</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <section id="storage">
+        <p class="kicker">07 / LOCALIZATION & PERSISTENCE</p>
+        <h2>页面模板与长期数据分开</h2>
+        <div class="columns">
+          <article class="note"><b>本模块触及的存档</b><p>页面读取 meta 状态，军械库购买调用 <code>buyMeta()</code>，结算调用 <code>awardShards()</code>；实际读写规则在 <code>meta.js</code>。UI.html 只缓存当前模板，不是档案。</p></article>
+          <article class="note"><b>语言切换时恢复 UI</b><p>ui.js 注册 <code>I18N.setOnChange()</code>：若 screen 可见，用缓存的原始 HTML/class 再调用 <code>screen()</code>；HUD/banner 则交还 hud 更新函数。</p></article>
+          <article class="note"><b>模板和数据职责</b><p><code>screen()</code> 对传入字符串执行 <code>I18N.html()</code>；玩家/装备数值仍存于对象，不通过翻译后的 DOM 反读。</p></article>
+          <article class="note"><b>动态内容来源</b><p>卡片、技能、物品提示和英雄描述来自数据模块；页面生成器将展示内容拼进模板，按钮动作再通过稳定 action key 连接行为。</p></article>
+        </div>
+      </section>
+
+      <section id="coupling">
+        <p class="kicker">08 / COUPLING & MAINTENANCE</p>
+        <h2>修改 UI 时注意的约束</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>约束</th><th>原因/后果</th></tr></thead>
+          <tbody>
+            <tr><td>UI_ACT 键要与模板 data-act 一致</td><td>screen 运行时按字符串查表并直接调用；拼错动作名没有降级分支。</td></tr>
+            <tr><td>每次 screen() 都替换子 DOM</td><td>直接挂在旧节点上的监听会丢；交互应在模板创建后绑定，或使用委托。</td></tr>
+            <tr><td>G.state 同步决定模拟是否前进</td><td>新增弹窗状态需确认 pause、键盘路由、pendingCards、主循环分支行为。</td></tr>
+            <tr><td>endRun() 有 ended 防重入</td><td>阵亡延迟回调与按钮可能交错；清算奖励不可重复写入。</td></tr>
+            <tr><td>UI 与 HUD 分层</td><td>screen 管整屏菜单；hud 管游戏内持续数据显示。不要在 UI 屏幕生成逻辑里复制 HUD 更新。</td></tr>
+            <tr><td>数据属性插入 HTML</td><td>当前业务数据多为内置定义；如接入外部/玩家输入，需要对文本和属性值做 HTML escaping。</td></tr>
+          </tbody>
+        </table></div>
+        <p class="callout" style="margin-top:14px">相邻分析：<a href="entity-analysis.html">工程对象总览</a> · <a href="render-analysis.html">render.js 世界绘制</a></p>
+      </section>
+      <footer><span>PIXEL LEAGUE / UI MODULE</span><span>分析依据：当前 js/ui.js 与调用点</span></footer>
+    </main>
+  </div>
+</body>
+</html>
