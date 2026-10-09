@@ -18,7 +18,7 @@ class Enemy extends Unit {
     if (this.def.fly) this.z = 4 + Math.sin(G.time * 4 + this.x) * 2;
     if (this.stun > 0 || this.knock) return;
     this.atkCd -= dt; this.chargeCd -= dt;
-    const p = G.player, d = dist(this, p);
+    const p = this.tgt = this.boss ? G.player : pickEnemyTarget(this), d = dist(this, p);
     if (this.charge) return this.doCharge(dt);
     if (this.windup > 0) { this.windup -= dt; if (this.windup <= 0) this.doAttack(); return; }
     if (this.special && this.special(dt, d)) return;
@@ -37,7 +37,7 @@ class Enemy extends Unit {
     this.walk(1, dt, 1, sight);
   }
   walk(dirSign, dt, mul = 1, sight) {
-    const p = G.player; let vx, vy;
+    const p = this.tgt || G.player; let vx, vy;
     if (dirSign < 0 || sight || dist(this, p) < 1.5) { const d = dist(this, p) || 1; vx = (p.x - this.x) / d * dirSign; vy = (p.y - this.y) / d * dirSign; }
     else { const f = flowDir(this); if (!f) return; vx = f.x; vy = f.y; }
     // separation from other enemies
@@ -51,7 +51,7 @@ class Enemy extends Unit {
     if (dirSign > 0) this.faceTo(this.x + vx); else this.faceTo(p.x);
   }
   doAttack() {
-    const p = G.player, d = dist(this, p);
+    const p = this.boss || !this.tgt || !this.tgt.alive ? G.player : this.tgt, d = dist(this, p);
     if (this.blind > 0) { ftext(this.x, this.y, 'MISS', '#aaaaaa'); return; }
     if (this.ai === 'melee' || this.ai === 'charger') {
       if (d <= this.st.range + this.r + p.r + 0.5) { dealDamage(this, p, this.st.ad, 'physical', { attack: true }); slashFx(p.x, p.y, Math.atan2(p.y - this.y, p.x - this.x), 0.6, '#ff8080'); }

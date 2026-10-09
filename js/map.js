@@ -137,10 +137,11 @@ function flowDir(u) {
   const tx = i + best[0] + 0.5, ty = j + best[1] + 0.5, d = distXY(u.x, u.y, tx, ty) || 1;
   return { x: (tx - u.x) / d, y: (ty - u.y) / d };
 }
-function randomSpawnPoint(minD, maxD) {
+// side: 1 = right of the player on screen, -1 = left, 0 = anywhere (screen x is proportional to x - y)
+function randomSpawnPoint(minD, maxD, side = 0) {
   const p = G.player;
   for (let t = 0; t < 200; t++) {
-    const a = rand(0, TAU), d = rand(minD, maxD), x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
+    const a = side ? rand(-0.9, 0.9) + Math.PI * 1.75 + (side < 0 ? Math.PI : 0) : rand(0, TAU), d = rand(minD, maxD), x = p.x + Math.cos(a) * d, y = p.y + Math.sin(a) * d;
     const k = Math.floor(y) * MAP_W + Math.floor(x);
     if (x > 2 && y > 2 && x < MAP_W - 2 && y < MAP_H - 2 && !blockedAt(x, y) && G.map.flow[k] >= 0) return { x, y };
   }

@@ -67,7 +67,7 @@ function killUnit(u, src) {
   u.hp = 0; u.alive = false;
   SFX.playKill(u, src);
   if (u.onDeath) u.onDeath(src);
-  if (P.hero.onKill) P.hero.onKill(P, u);
+  if (P.hero.onKill && !u.ally) P.hero.onKill(P, u);
 }
 function gainXP(v) {
   const p = G.player;
@@ -137,7 +137,7 @@ function tickProjs(dt) {
     if (p.trail && chance(0.6)) burst(p.x, p.y, p.col, 1, 0.3, 8, 0.3);
     let dead = p.life <= 0 || (p.wall && blockedAt(p.x, p.y));
     if (!dead) {
-      const tg = p.src === G.player ? G.enemies : [G.player];
+      const tg = foesOf(p.src);
       for (const t of tg) {
         if (!t.alive || p.hit.has(t) || dist(p, t) > p.r + t.r) continue;
         p.hit.add(t); p.onHit(t, p);

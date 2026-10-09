@@ -11,7 +11,7 @@ function startRun(hero) {
 function startStage(n) {
   const S = STAGES[n - 1], R = G.run;
   G.map = genMap(S.biome); buildProps(G.map.biome); G.ground = renderGround(G.map); G.minimapBg = null;
-  for (const k of ['enemies', 'projs', 'zones', 'drops', 'fx', 'parts', 'texts', 'timers']) G[k] = [];
+  for (const k of ['enemies', 'allies', 'projs', 'zones', 'drops', 'fx', 'parts', 'texts', 'timers']) G[k] = [];
   const p = G.player; p.x = MC + 0.5; p.y = MC + 0.5; p.stop(); p.dash = null;
   G.cam.x = isoX(p.x, p.y); G.cam.y = isoY(p.x, p.y);
   updateFlow(p.x, p.y);
@@ -28,7 +28,7 @@ function startWave() {
   banner(`Wave ${R.wave} / ${S.waves}`, elites ? `${elites} elite${elites > 1 ? 's' : ''} incoming` : '');
 }
 function spawnBoss() {
-  const R = G.run, S = STAGES[R.stage - 1], pt = randomSpawnPoint(6, 9);
+  const R = G.run, S = STAGES[R.stage - 1], pt = randomSpawnPoint(6, 9, 1);
   const b = new Boss(S.boss, pt.x, pt.y, R.stage); b.spawnT = 1.5;
   G.enemies.push(b); R.boss = b; R.phase = 'boss';
   teleFx(pt.x, pt.y, 2, '#ff3020', 1.5); G.shake = 0.5;
@@ -38,11 +38,12 @@ function updateSpawner(dt) {
   const R = G.run, S = STAGES[R.stage - 1], p = G.player;
   R.time += dt;
   if ((R.flowT -= dt) <= 0) { R.flowT = 0.25; updateFlow(p.x, p.y); }
+  allySpawnTick(dt);
   if (R.phase === 'break') { if ((R.waveT -= dt) <= 0) startWave(); }
   else if (R.phase === 'wave') {
     R.waveT -= dt; R.spawnT -= dt;
     if (R.spawnT <= 0 && R.queue.length && G.enemies.length < 60) {
-      R.spawnT = Math.max(1, 2.4 - R.stage * 0.2 - R.wave * 0.08); const pt = randomSpawnPoint(7, 12), n = Math.min(R.queue.length, randi(2, 2 + Math.min(3, R.stage)));
+      R.spawnT = Math.max(1, 2.4 - R.stage * 0.2 - R.wave * 0.08); const pt = randomSpawnPoint(7, 12, 1), n = Math.min(R.queue.length, randi(2, 2 + Math.min(3, R.stage)));
       for (let i = 0; i < n; i++) {
         const q = R.queue.shift(), s = snapFree(pt.x + rand(-0.8, 0.8), pt.y + rand(-0.8, 0.8), 0.35) || pt;
         G.enemies.push(new Enemy(q.key, s.x, s.y, R.stage, R.wave, q.elite));

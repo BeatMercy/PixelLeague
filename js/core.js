@@ -45,7 +45,7 @@ addEventListener('resize', resize); resize();
 // Global game state
 const G = {
   state: 'title', time: 0, player: null,
-  enemies: [], projs: [], zones: [], drops: [], fx: [], parts: [], texts: [], timers: [],
+  enemies: [], allies: [], projs: [], zones: [], drops: [], fx: [], parts: [], texts: [], timers: [],
   map: null, ground: null, cam: { x: 0, y: 0, lock: true },
   run: null, hoverEnemy: null, hoverDrop: null, shake: 0,
 };
