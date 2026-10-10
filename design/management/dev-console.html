@@ -48,8 +48,29 @@
       <section class="editor" aria-label="素材预览和编辑">
         <div class="editor-heading">
           <div><p class="eyebrow">PREVIEW & EDIT</p><h2 id="selectedName">选择一项素材</h2><p id="selectedPath" class="asset-path">从左侧素材库选择 SVG 文件。</p></div>
-          <label class="button secondary upload-button">替换 SVG<input id="replaceFile" type="file" accept=".svg,image/svg+xml"></label>
+          <div class="asset-actions">
+            <button class="button secondary" id="drawIcon" type="button" disabled>绘制当前图标</button>
+            <label class="button secondary upload-button">PNG 替换<input id="replacePng" type="file" accept="image/png,.png" disabled></label>
+            <label class="button secondary upload-button">替换 SVG<input id="replaceFile" type="file" accept=".svg,image/svg+xml" disabled></label>
+          </div>
         </div>
+
+        <section class="drawing-panel" id="drawingPanel" aria-label="图标像素画板" hidden>
+          <div class="drawing-heading">
+            <div><p class="eyebrow">32 × 32 PIXEL CANVAS</p><h3>绘制当前图标</h3></div>
+            <button class="button secondary" id="closeDrawing" type="button">关闭画板</button>
+          </div>
+          <div class="drawing-controls">
+            <label class="color-control">画笔颜色<input id="brushColor" type="color" value="#d4b86a"></label>
+            <label class="brush-control">笔刷大小<select id="brushSize"><option value="1">1 像素</option><option value="2">2 像素</option><option value="3">3 像素</option><option value="4">4 像素</option></select></label>
+            <button class="button secondary" id="eraser" type="button" aria-pressed="false">橡皮擦</button>
+            <button class="button secondary" id="undoDrawing" type="button" disabled>撤销</button>
+            <button class="button secondary" id="clearDrawing" type="button">清空</button>
+            <button class="button primary" id="applyDrawing" type="button">应用到 SVG 编辑器</button>
+          </div>
+          <div class="canvas-scroll"><canvas id="pixelCanvas" width="32" height="32" aria-label="32 乘 32 像素画布"></canvas></div>
+          <p class="drawing-hint">单击或拖动绘制；橡皮擦恢复透明。应用只会更改编辑器内容，仍需点击“保存素材”写入文件。</p>
+        </section>
 
         <div class="preview-stage">
           <div class="preview-grid" aria-hidden="true"></div>
