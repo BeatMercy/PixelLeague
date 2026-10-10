@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#11140f">
+  <title>Pixel League · 开发控制台</title>
+  <link rel="stylesheet" href="console.css">
+  <script src="console.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="../../index.html"><span class="brand-mark">PL</span><span>PIXEL LEAGUE <small>/ 开发控制台</small></span></a>
+    <nav aria-label="项目导航">
+      <a href="../../index.html">打开游戏</a>
+      <a href="../../icons.html">图标库</a>
+      <a href="README.md">管理手册</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="intro">
+      <div>
+        <p class="eyebrow">LOCAL DEVELOPMENT · ASSET WORKBENCH</p>
+        <h1>项目管理台</h1>
+        <p>统一查看角色、图标、声效、原画插图与故事设定。连接项目目录后可编辑 SVG、归档媒体文件并预览素材。</p>
+      </div>
+      <div class="actions">
+        <button class="button secondary" id="connectProject" type="button">连接项目目录</button>
+        <span class="connection" id="connectionStatus" role="status">正在读取项目素材…</span>
+      </div>
+    </section>
+
+    <section class="workspace" aria-label="素材工作区">
+      <aside class="library">
+        <div class="library-heading">
+          <div><p class="eyebrow">ASSET LIBRARY</p><h2>素材库 <span id="assetCount">0</span></h2></div>
+          <label class="search"><span class="sr-only">搜索素材</span><input id="searchAssets" type="search" placeholder="搜索名称或类型"></label>
+        </div>
+        <div class="filters" role="group" aria-label="素材类别">
+          <button type="button" class="filter active" data-filter="all" aria-pressed="true">全部</button>
+          <button type="button" class="filter" data-filter="character" aria-pressed="false">角色</button>
+          <button type="button" class="filter" data-filter="icon" aria-pressed="false">图标</button>
+          <button type="button" class="filter" data-filter="sound" aria-pressed="false">声效</button>
+          <button type="button" class="filter" data-filter="illustration" aria-pressed="false">原画</button>
+          <button type="button" class="filter" data-filter="lore" aria-pressed="false">故事</button>
+        </div>
+        <div id="assetList" class="asset-list" aria-label="素材列表"></div>
+      </aside>
+
+      <section class="editor" aria-label="素材预览和编辑">
+        <div class="editor-heading">
+          <div><p class="eyebrow">PREVIEW & EDIT</p><h2 id="selectedName">选择一项素材</h2><p id="selectedPath" class="asset-path">从左侧素材库选择 SVG 文件。</p></div>
+          <div class="asset-actions">
+            <button class="button secondary" id="drawIcon" type="button" disabled>绘制当前图标</button>
+            <label class="button secondary upload-button">PNG 替换<input id="replacePng" type="file" accept="image/png,.png" disabled></label>
+            <label class="button secondary upload-button">替换 SVG<input id="replaceFile" type="file" accept=".svg,image/svg+xml" disabled></label>
+            <label class="button secondary upload-button media-import">导入声效<input id="importAudio" type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.flac"></label>
+            <label class="button secondary upload-button media-import">导入原画<input id="importIllustration" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"></label>
+          </div>
+        </div>
+
+        <section class="drawing-panel" id="drawingPanel" aria-label="图标像素画板" hidden>
+          <div class="drawing-heading">
+            <div><p class="eyebrow">32 × 32 PIXEL CANVAS</p><h3>绘制当前图标</h3></div>
+            <button class="button secondary" id="closeDrawing" type="button">关闭画板</button>
+          </div>
+          <div class="drawing-controls">
+            <label class="color-control">画笔颜色<input id="brushColor" type="color" value="#d4b86a"></label>
+            <label class="brush-control">笔刷大小<select id="brushSize"><option value="1">1 像素</option><option value="2">2 像素</option><option value="3">3 像素</option><option value="4">4 像素</option></select></label>
+            <button class="button secondary" id="eraser" type="button" aria-pressed="false">橡皮擦</button>
+            <button class="button secondary" id="undoDrawing" type="button" disabled>撤销</button>
+            <button class="button secondary" id="clearDrawing" type="button">清空</button>
+            <button class="button primary" id="applyDrawing" type="button">应用到 SVG 编辑器</button>
+          </div>
+          <div class="canvas-scroll"><canvas id="pixelCanvas" width="32" height="32" aria-label="32 乘 32 像素画布"></canvas></div>
+          <p class="drawing-hint">单击或拖动绘制；橡皮擦恢复透明。应用只会更改编辑器内容，仍需点击“保存素材”写入文件。</p>
+        </section>
+
+        <section id="catalogDetails" class="catalog-details" hidden aria-live="polite">
+          <p class="eyebrow" id="catalogCategory"></p>
+          <p id="catalogDescription"></p>
+          <p id="catalogStatus"></p>
+          <a id="catalogSource" target="_blank" rel="noopener noreferrer" hidden>打开素材源</a>
+          <audio id="audioPreview" controls preload="none" hidden></audio>
+          <img id="mediaPreview" alt="素材预览" hidden>
+          <p id="mediaHint" class="drawing-hint" hidden></p>
+        </section>
+
+        <div class="preview-stage">
+          <div class="preview-grid" aria-hidden="true"></div>
+          <img id="assetPreview" alt="所选素材预览" hidden>
+          <p id="emptyPreview">选择素材以查看预览</p>
+        </div>
+
+        <div class="editor-toolbar">
+          <span id="validationStatus" class="validation" role="status">SVG 源码编辑器</span>
+          <span id="dirtyStatus" class="dirty-status">未修改</span>
+        </div>
+        <label class="sr-only" for="svgSource">SVG 源码</label>
+        <textarea id="svgSource" spellcheck="false" wrap="off" placeholder="选择素材后，SVG 源码会显示在这里。"></textarea>
+        <div class="editor-footer">
+          <p id="saveHelp">仅保存为 SVG；项目目录连接后可直接写入对应素材文件。</p>
+          <button class="button primary" id="saveAsset" type="button" disabled>保存素材</button>
+        </div>
+      </section>
+    </section>
+
+    <section class="guide">
+      <p class="eyebrow">SAFE WORKFLOW</p>
+      <p><strong>建议：</strong>连接项目根目录后编辑；保存前确认预览与路径。素材替换不会自动提交代码，也不会修改游戏数据。图标运行时使用 <code>assets/icons.bundle.svg</code>，生成图标的源文件是 <code>assets/game-icons.svg</code>。</p>
+      <p id="runtimeHint">若素材无法加载，请从仓库根目录启动本地静态服务器后访问本页；要导入声音或插图，请连接项目根目录并授权读写。</p>
+    </section>
+  </main>
+  <footer>Pixel League · 本地开发工具 · 保存前请在游戏中验证素材</footer>
+</body>
+</html>

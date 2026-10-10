@@ -14,12 +14,12 @@
 
 ## 开始运行
 
-1. 在浏览器中打开 `index.html`。没有 `package.json`、构建步骤或依赖安装步骤。
+1. 在浏览器中打开 `index.html` 可直接开发运行；部署前运行 `node scripts/build-assets.mjs`，生成 `dist/` 静态游戏包。
 2. 从标题界面选择 New Run，选择英雄后进入第一关。
 3. 更新 JavaScript 后重新载入页面即可；游戏状态和语言分别保存在浏览器本地存储中。
 4. 开发介绍页为 `dev-context.html`；本文件为更完整的纯文本上下文记录。
 
-项目没有配置自动化测试。可使用 `node --check js/<file>.js` 检查单个脚本语法；完整验证仍需在浏览器中游玩关键流程。
+项目没有 `package.json`、第三方运行时依赖、自动化测试或 lint 配置。可使用 `node --check js/<file>.js` 检查脚本语法；`node scripts/build-assets.mjs` 是资产校验和静态打包脚本，不负责玩法测试。完整验证仍需在浏览器中游玩关键流程。
 
 ## 单局生命周期
 
@@ -83,7 +83,8 @@ boot()
 
 ### 素材和需求
 
-- `assets/game-icons.svg`：121 个以 `<symbol>` 导出的 SVG 图标，ID 按 `hero-`、`weapon-`、`armor-`、`potion-`、`magic-`、`monster-`、`resource-`、`ui-` 分类。
+- `assets/game-icons.svg`：124 个以 `<symbol>` 导出的 SVG 图标，ID 按 `hero-`、`weapon-`、`armor-`、`potion-`、`magic-`、`monster-`、`resource-`、`ui-` 分类。
+- `design/management/asset-catalog.json`：素材管理目录；声效由 `js/sound.js` 的 Web Audio 实时合成，故事候选见 `design/story/`，新增原画与音频可从管理台登记和预览。登记/导入不代表已接入游戏运行时。运行 `node scripts/build-assets.mjs` 校验资产并生成可部署静态站点 `dist/`。
 - `Requirement.md`：初始玩法目标记录。当前代码为该目标的已实现形态，发生差异时以实际代码为准。
 
 ## 加载顺序与共享接口
@@ -141,4 +142,4 @@ boot()
 - Meta 存档键：`pixelLeague.meta.v1`；语言偏好键：`pixelLeague.locale.v1`。清空/迁移其一不会影响另一项。
 - 世界运行在 44×44 tile 空间；`map.js` 处理空间/寻路，`render.js` 负责 Canvas 绘制，`hud.js` 负责 HTML 层。碰撞和战斗逻辑不应依赖本地化文案。
 - 地图和精灵在运行时用 Canvas 生成；地图随机，截图和关卡布局不会固定。
-- 当前无 lint/test/build 配置。建议验证：中英来回切换、刷新后语言保持、主菜单和帮助、英雄选择、开局/HUD、技能 tooltip、升级卡、掉落/出售、营地、暂停、结算。图标选择器另检查筛选和 SVG 显示。
+- 当前无 lint/test 配置；静态发布包由 `node scripts/build-assets.mjs` 生成到 `dist/`。建议验证：中英来回切换、刷新后语言保持、主菜单和帮助、英雄选择、开局/HUD、技能 tooltip、升级卡、掉落/出售、营地、暂停、结算。图标选择器另检查筛选和 SVG 显示。
