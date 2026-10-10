@@ -1,7 +1,7 @@
 'use strict';
 
 const rootPath = new URL('../../', window.location.href);
-const state = { assets: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null };
+const state = { assets: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, previewRequest: 0 };
 const ui = {
   list: document.querySelector('#assetList'),
   count: document.querySelector('#assetCount'),
@@ -122,39 +122,54 @@ function renderList() {
 }
 
 function validateSvg(source) {
-  const document = new DOMParser().parseFromString(source, 'image/svg+xml');
-  if (document.querySelector('parsererror') || document.documentElement.localName !== 'svg') {
+  const trimmed = source.trim();
+  if (!/^<svg\b/i.test(trimmed.replace(/^<\?xml[^?]*\?>\s*/i, ''))
+    || !/<\/svg>\s*$/i.test(trimmed)) {
     return { valid: false, message: '无效的 SVG/XML 格式' };
   }
-  const forbidden = document.querySelector('script, foreignObject, iframe, object, embed');
-  if (forbidden) return { valid: false, message: `不允许使用 <${forbidden.localName}> 元素` };
-  for (const element of document.querySelectorAll('*')) {
-    for (const attribute of [...element.attributes]) {
-      const name = attribute.name.toLowerCase();
-      const value = attribute.value.trim();
-      if (name.startsWith('on')) return { valid: false, message: '不允许使用事件处理属性' };
-      if ((name === 'href' || name.endsWith(':href')) && value && !value.startsWith('#')) {
-        return { valid: false, message: 'SVG 只能引用同文件内的元素' };
-      }
-      if (/javascript\s*:|@import|url\(\s*['"]?(?:https?:|data:|\/\/)/i.test(value)) {
-        return { valid: false, message: '不允许脚本或外部资源引用' };
-      }
-    }
+  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:script|foreignObject|iframe|object|embed)\b/i.test(source)) {
+    return { valid: false, message: '不允许使用脚本、外部实体或嵌入式内容' };
   }
-  return { valid: true, document };
+  if (/\son[a-z]+\s*=|\b(?:xlink:)?href\s*=\s*(['"])(?!#)[\s\S]*?\1/i.test(source)) {
+    return { valid: false, message: '不允许事件处理属性或外部资源引用' };
+  }
+  if (/javascript\s*:|@import|expression\s*\(|url\(\s*['"]?(?:https?:|data:|\/\/)/i.test(source)) {
+    return { valid: false, message: '不允许脚本或外部资源引用' };
+  }
+  return { valid: true };
 }
 
 function refreshPreview() {
+  const request = ++state.previewRequest;
   const result = validateSvg(ui.source.value);
-  ui.validation.textContent = result.valid ? 'SVG 格式有效' : result.message;
-  ui.validation.dataset.state = result.valid ? 'valid' : 'error';
-  ui.save.disabled = !state.selected || !result.valid;
-  if (!result.valid) return;
+  ui.validation.textContent = result.valid ? '检查 SVG 格式…' : result.message;
+  ui.validation.dataset.state = result.valid ? '' : 'error';
+  ui.save.disabled = true;
+  if (!result.valid) {
+    if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
+    state.previewUrl = null;
+    ui.preview.hidden = true;
+    ui.emptyPreview.hidden = false;
+    return;
+  }
   if (state.previewUrl) URL.revokeObjectURL(state.previewUrl);
   state.previewUrl = URL.createObjectURL(new Blob([ui.source.value], { type: 'image/svg+xml' }));
   ui.preview.src = state.previewUrl;
   ui.preview.hidden = false;
   ui.emptyPreview.hidden = true;
+  ui.preview.decode().then(() => {
+    if (request !== state.previewRequest) return;
+    ui.validation.textContent = 'SVG 格式有效';
+    ui.validation.dataset.state = 'valid';
+    ui.save.disabled = !state.selected;
+  }).catch(() => {
+    if (request !== state.previewRequest) return;
+    ui.validation.textContent = 'SVG 无法解析或预览';
+    ui.validation.dataset.state = 'error';
+    ui.preview.hidden = true;
+    ui.emptyPreview.hidden = false;
+    ui.save.disabled = true;
+  });
 }
 
 async function selectAsset(asset, updateList = true, force = false) {
@@ -231,34 +246,20 @@ async function writeProjectText(path, contents) {
   }
 }
 
+function findSymbolMarkup(source, iconId) {
+  const escapedId = iconId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = source.match(new RegExp(`<symbol\\b(?=[^>]*\\bid=(["'])${escapedId}\\1)[^>]*>[\\s\\S]*?<\\/symbol\\s*>`, 'i'));
+  return match?.[0] || null;
+}
+
 function updateIconCollection(collectionSource, iconSource, iconId) {
   const collection = new DOMParser().parseFromString(collectionSource, 'image/svg+xml');
-  const icon = new DOMParser().parseFromString(iconSource, 'image/svg+xml');
-  if (collection.querySelector('parsererror') || icon.querySelector('parsererror')) {
-    throw new Error('图标 SVG 集合格式无效');
-  }
-  const symbol = [...icon.querySelectorAll('symbol[id]')].find((item) => item.id === iconId);
+  if (collection.querySelector('parsererror')) throw new Error('图标 SVG 集合格式无效');
+  const symbolMarkup = findSymbolMarkup(iconSource, iconId);
   const target = [...collection.querySelectorAll('symbol[id]')].find((item) => item.id === iconId);
-  if (!symbol || !target) throw new Error(`无法在 SVG 中找到图标 ${iconId}`);
-
-  const targetRoot = collection.documentElement;
-  const sourceDefs = icon.querySelector('defs');
-  let targetDefs = collection.querySelector('defs');
-  if (sourceDefs) {
-    if (!targetDefs) {
-      targetDefs = collection.createElementNS('http://www.w3.org/2000/svg', 'defs');
-      targetRoot.insertBefore(targetDefs, targetRoot.firstChild);
-    }
-    const knownIds = new Set([...targetDefs.querySelectorAll('[id]')].map((item) => item.id));
-    for (const definition of [...sourceDefs.children]) {
-      if (definition.id && !knownIds.has(definition.id)) {
-        targetDefs.append(collection.importNode(definition, true));
-        knownIds.add(definition.id);
-      }
-    }
-  }
-  target.replaceWith(collection.importNode(symbol, true));
-  return new XMLSerializer().serializeToString(collection);
+  const targetMarkup = target && findSymbolMarkup(collectionSource, iconId);
+  if (!symbolMarkup || !targetMarkup) throw new Error(`无法在 SVG 中找到图标 ${iconId}`);
+  return collectionSource.replace(targetMarkup, symbolMarkup);
 }
 
 function downloadAsset() {
