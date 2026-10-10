@@ -54,7 +54,7 @@ export async function buildIcons(projectRoot = root) {
     const icon = `${svgOpen}${definitions}${symbol.markup}<use href="#${symbol.id}"/></svg>\n`;
     await fs.writeFile(path.join(assetsDir, `${symbol.id}.svg`), icon);
   }
-  const bundle = `${svgOpen}${definitions}${symbols.map((symbol) => symbol.markup).join('')}</svg>\n`;
+  const bundle = `<svg xmlns="${svgNamespace}" width="32" height="32" viewBox="0 0 32 32">${definitions}${symbols.map((symbol) => symbol.markup).join('')}</svg>\n`;
   await fs.writeFile(path.join(projectRoot, 'assets/icons.bundle.svg'), bundle);
   return symbols.map(({ id, viewBox }) => ({ id, viewBox }));
 }

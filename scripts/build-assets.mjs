@@ -5,6 +5,11 @@ import { buildIcons } from './build-icons.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
+function isWithin(parent, candidate) {
+  const relative = path.relative(parent, candidate);
+  return relative !== '' && relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
+}
+
 async function readJson(file) {
   try {
     return JSON.parse(await fs.readFile(file, 'utf8'));
@@ -52,6 +57,8 @@ export async function buildAssets(projectRoot = root, outputPath = path.join(pro
   if (catalog.version !== 1 || !Array.isArray(catalog.assets)) {
     throw new Error('Asset catalog must use version 1 and contain an assets array.');
   }
+  const catalogIds = new Set();
+  const catalogPaths = new Set();
 
   for (const [id, frames] of Object.entries(characters)) {
     if (!/^[A-Za-z0-9_-]+$/.test(id) || !frames || typeof frames !== 'object') {
@@ -66,7 +73,15 @@ export async function buildAssets(projectRoot = root, outputPath = path.join(pro
     if (!asset || typeof asset.id !== 'string' || !['sound', 'illustration', 'lore'].includes(asset.type)) {
       throw new Error('Asset catalog contains an invalid entry.');
     }
+    if (!/^[A-Za-z0-9_-]+$/.test(asset.id) || catalogIds.has(asset.id)) {
+      throw new Error(`Asset catalog contains an invalid or duplicate ID: ${asset.id}`);
+    }
+    catalogIds.add(asset.id);
     if (!asset.path || asset.status === 'empty') continue;
+    if (/^assets\/(audio|illustrations)\//.test(asset.path)) {
+      if (catalogPaths.has(asset.path)) throw new Error(`Asset catalog contains duplicate media paths: ${asset.path}`);
+      catalogPaths.add(asset.path);
+    }
     if (/^assets\/(audio|illustrations)\//.test(asset.path)) {
       const extension = path.extname(asset.path).toLowerCase();
       const allowed = asset.type === 'sound'
