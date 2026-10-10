@@ -1,7 +1,7 @@
 'use strict';
 
 const rootPath = new URL('../../', window.location.href);
-const state = { assets: [], catalog: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, previewRequest: 0, drawing: false, erasing: false, strokeStart: null, history: [], pendingFile: null };
+const state = { assets: [], catalog: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, mediaPreviewUrl: null, previewRequest: 0, drawing: false, erasing: false, strokeStart: null, history: [], pendingFile: null };
 const ui = {
   list: document.querySelector('#assetList'),
   count: document.querySelector('#assetCount'),
@@ -57,6 +57,7 @@ function safeAssetPath(path) {
 function safeProjectPath(path) {
   if (safeAssetPath(path)) return true;
   if (typeof path !== 'string' || path.split('/').some((part) => !part || part === '.' || part === '..')) return false;
+  if (path === 'assets/audio' || path === 'assets/illustrations') return true;
   if (/^assets\/audio\/[A-Za-z0-9._-]+\.(?:wav|mp3|ogg|m4a|flac|webm)$/i.test(path)) return true;
   if (/^assets\/illustrations\/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp)$/i.test(path)) return true;
   return path === 'design/management/asset-catalog.json'
@@ -223,6 +224,9 @@ async function selectAsset(asset, updateList = true, force = false) {
   if (!force && ui.dirty.dataset.dirty === 'true' && state.selected?.id !== asset.id
     && !window.confirm('当前素材有未保存修改，切换后将丢失这些修改。继续吗？')) return;
   state.selected = asset;
+  if (state.mediaPreviewUrl) URL.revokeObjectURL(state.mediaPreviewUrl);
+  state.mediaPreviewUrl = null;
+  ui.audioPreview.pause();
   ui.name.textContent = asset.name;
   ui.path.textContent = asset.path || '素材目录';
   ui.pendingFile = asset.file || null;
@@ -273,10 +277,11 @@ async function selectAsset(asset, updateList = true, force = false) {
         if (asset.type === 'sound') {
           ui.audioPreview.src = mediaUrl;
           ui.audioPreview.hidden = false;
+          if (media) state.mediaPreviewUrl = mediaUrl;
         } else {
           ui.mediaPreview.src = mediaUrl;
           ui.mediaPreview.hidden = false;
-          if (media) ui.mediaPreview.dataset.objectUrl = mediaUrl;
+          if (media) state.mediaPreviewUrl = mediaUrl;
         }
       } catch (error) {
         ui.catalogStatus.textContent = `素材无法读取：${error.message}`;
@@ -284,10 +289,12 @@ async function selectAsset(asset, updateList = true, force = false) {
     }
     if (asset.file) {
       if (asset.type === 'sound') {
-        ui.audioPreview.src = URL.createObjectURL(asset.file);
+        state.mediaPreviewUrl = URL.createObjectURL(asset.file);
+        ui.audioPreview.src = state.mediaPreviewUrl;
         ui.audioPreview.hidden = false;
       } else {
-        ui.mediaPreview.src = URL.createObjectURL(asset.file);
+        state.mediaPreviewUrl = URL.createObjectURL(asset.file);
+        ui.mediaPreview.src = state.mediaPreviewUrl;
         ui.mediaPreview.hidden = false;
       }
     }

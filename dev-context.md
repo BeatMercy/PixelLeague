@@ -83,7 +83,8 @@ boot()
 
 ### 素材和需求
 
-- `assets/game-icons.svg`：121 个以 `<symbol>` 导出的 SVG 图标，ID 按 `hero-`、`weapon-`、`armor-`、`potion-`、`magic-`、`monster-`、`resource-`、`ui-` 分类。
+- `assets/game-icons.svg`：124 个以 `<symbol>` 导出的 SVG 图标，ID 按 `hero-`、`weapon-`、`armor-`、`potion-`、`magic-`、`monster-`、`resource-`、`ui-` 分类。
+- `design/management/asset-catalog.json`：素材管理目录；声效由 `js/sound.js` 的 Web Audio 实时合成，故事候选见 `design/story/`，新增原画与音频可从管理台登记和预览。登记/导入不代表已接入游戏运行时。
 - `Requirement.md`：初始玩法目标记录。当前代码为该目标的已实现形态，发生差异时以实际代码为准。
 
 ## 加载顺序与共享接口
