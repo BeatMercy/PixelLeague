@@ -1,7 +1,7 @@
 'use strict';
 
 const rootPath = new URL('../../', window.location.href);
-const state = { assets: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, previewRequest: 0, drawing: false, erasing: false, strokeStart: null, history: [] };
+const state = { assets: [], catalog: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, previewRequest: 0, drawing: false, erasing: false, strokeStart: null, history: [], pendingFile: null };
 const ui = {
   list: document.querySelector('#assetList'),
   count: document.querySelector('#assetCount'),
@@ -29,6 +29,16 @@ const ui = {
   undoDrawing: document.querySelector('#undoDrawing'),
   clearDrawing: document.querySelector('#clearDrawing'),
   applyDrawing: document.querySelector('#applyDrawing'),
+  importAudio: document.querySelector('#importAudio'),
+  importIllustration: document.querySelector('#importIllustration'),
+  catalogDetails: document.querySelector('#catalogDetails'),
+  catalogCategory: document.querySelector('#catalogCategory'),
+  catalogDescription: document.querySelector('#catalogDescription'),
+  catalogStatus: document.querySelector('#catalogStatus'),
+  catalogSource: document.querySelector('#catalogSource'),
+  audioPreview: document.querySelector('#audioPreview'),
+  mediaPreview: document.querySelector('#mediaPreview'),
+  mediaHint: document.querySelector('#mediaHint'),
 };
 const pixelContext = ui.pixelCanvas.getContext('2d', { willReadFrequently: true });
 
@@ -44,8 +54,19 @@ function safeAssetPath(path) {
     && /\.(svg|json)$/i.test(path);
 }
 
+function safeProjectPath(path) {
+  if (safeAssetPath(path)) return true;
+  if (typeof path !== 'string' || path.split('/').some((part) => !part || part === '.' || part === '..')) return false;
+  if (/^assets\/audio\/[A-Za-z0-9._-]+\.(?:wav|mp3|ogg|m4a|flac|webm)$/i.test(path)) return true;
+  if (/^assets\/illustrations\/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp)$/i.test(path)) return true;
+  return path === 'design/management/asset-catalog.json'
+    || path === 'soundeffect.html'
+    || path === 'js/sound.js'
+    || /^design\/story\/[A-Za-z0-9_-]+\.md$/.test(path);
+}
+
 async function readFromProject(path) {
-  if (!state.projectRoot || !safeAssetPath(path)) throw new Error('无效的素材路径');
+  if (!state.projectRoot || !safeProjectPath(path)) throw new Error('无效的素材路径');
   const parts = path.split('/');
   let directory = state.projectRoot;
   for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part);
@@ -54,6 +75,7 @@ async function readFromProject(path) {
 }
 
 async function readProjectText(path) {
+  if (!safeProjectPath(path)) throw new Error('无效的项目路径');
   if (state.projectRoot) return (await readFromProject(path)).text();
   const response = await fetch(new URL(path, rootPath));
   if (!response.ok) throw new Error(`无法读取 ${path}（${response.status}）`);
@@ -61,9 +83,10 @@ async function readProjectText(path) {
 }
 
 async function loadAssets() {
-  const [manifestText, iconsText] = await Promise.all([
+  const [manifestText, iconsText, catalogText] = await Promise.all([
     readProjectText('assets/character/manifest.json'),
     readProjectText('assets/game-icons.svg'),
+    readProjectText('design/management/asset-catalog.json'),
   ]);
   const manifest = JSON.parse(manifestText);
   const characters = Object.entries(manifest).flatMap(([character, frames]) =>
@@ -81,7 +104,13 @@ async function loadAssets() {
     type: 'icon',
     path: `assets/icons/${symbol.id}.svg`,
   }));
-  state.assets = [...characters, ...icons];
+  const catalog = JSON.parse(catalogText);
+  if (catalog.version !== 1 || !Array.isArray(catalog.assets)) throw new Error('素材目录格式无效');
+  state.catalog = catalog.assets.filter((asset) =>
+    asset && typeof asset.id === 'string' && typeof asset.type === 'string'
+    && ['sound', 'illustration', 'lore'].includes(asset.type)
+    && (!asset.path || safeProjectPath(asset.path)));
+  state.assets = [...characters, ...icons, ...state.catalog];
   ui.count.textContent = String(state.assets.length);
   renderList();
   if (state.selected) {
@@ -93,7 +122,7 @@ async function loadAssets() {
 function renderList() {
   const matches = state.assets.filter((asset) => {
     const filterMatch = state.filter === 'all' || asset.type === state.filter;
-    const queryMatch = `${asset.name} ${asset.group} ${asset.type}`.toLowerCase().includes(state.query);
+    const queryMatch = `${asset.name} ${asset.group || ''} ${asset.type} ${asset.description || ''}`.toLowerCase().includes(state.query);
     return filterMatch && queryMatch;
   });
   ui.list.replaceChildren();
@@ -123,11 +152,14 @@ function renderList() {
     const title = document.createElement('strong');
     title.textContent = asset.name;
     const group = document.createElement('small');
-    group.textContent = asset.type === 'character' ? `${asset.group} / ${asset.frame}` : 'SVG 图标';
+    group.textContent = asset.type === 'character' ? `${asset.group} / ${asset.frame}`
+      : asset.type === 'icon' ? 'SVG 图标'
+        : asset.type === 'sound' ? '声音素材'
+          : asset.type === 'illustration' ? '原画插图' : '角色故事';
     label.append(title, group);
     const kind = document.createElement('span');
     kind.className = 'asset-kind';
-    kind.textContent = asset.type === 'character' ? '角色' : '图标';
+    kind.textContent = ({ character: '角色', icon: '图标', sound: '声效', illustration: '原画', lore: '故事' })[asset.type] || '';
     row.append(thumb, label, kind);
     row.addEventListener('click', () => selectAsset(asset));
     fragment.append(row);
@@ -192,7 +224,15 @@ async function selectAsset(asset, updateList = true, force = false) {
     && !window.confirm('当前素材有未保存修改，切换后将丢失这些修改。继续吗？')) return;
   state.selected = asset;
   ui.name.textContent = asset.name;
-  ui.path.textContent = asset.path;
+  ui.path.textContent = asset.path || '素材目录';
+  ui.pendingFile = asset.file || null;
+  ui.catalogDetails.hidden = !['sound', 'illustration', 'lore'].includes(asset.type);
+  ui.catalogSource.hidden = true;
+  ui.audioPreview.hidden = true;
+  ui.audioPreview.removeAttribute('src');
+  ui.mediaPreview.hidden = true;
+  ui.mediaPreview.removeAttribute('src');
+  ui.mediaHint.hidden = true;
   ui.source.value = '';
   ui.source.disabled = true;
   ui.save.disabled = true;
@@ -200,6 +240,64 @@ async function selectAsset(asset, updateList = true, force = false) {
   ui.replacePng.disabled = true;
   ui.drawIcon.disabled = true;
   ui.drawingPanel.hidden = true;
+  ui.importAudio.disabled = !state.projectRoot;
+  ui.importIllustration.disabled = !state.projectRoot;
+  if (['sound', 'illustration', 'lore'].includes(asset.type)) {
+    ui.validation.textContent = '素材管理条目';
+    ui.validation.dataset.state = '';
+    ui.dirty.textContent = '目录条目';
+    ui.dirty.dataset.dirty = 'false';
+    ui.save.disabled = !asset.file;
+    ui.catalogCategory.textContent = ({ sound: 'SOUND DESIGN', illustration: 'ILLUSTRATION', lore: 'CHARACTER LORE' })[asset.type];
+    ui.catalogDescription.textContent = asset.description || '';
+    ui.catalogStatus.textContent = asset.status === 'procedural' ? `状态：程序合成${asset.owner ? ` · ${asset.owner}` : ''}`
+      : asset.status === 'proposal' ? '状态：剧情候选方案，尚未选定'
+        : asset.status === 'empty' ? '状态：尚无独立原画素材'
+          : asset.status === 'design' ? '状态：设计参考'
+            : asset.status === 'imported' ? '状态：已导入素材'
+              : `状态：${asset.status || '已登记'}`;
+    if (asset.path && asset.status !== 'empty') {
+      ui.catalogSource.href = new URL(asset.path, rootPath).href;
+      ui.catalogSource.textContent = `打开文件：${asset.path}`;
+      ui.catalogSource.hidden = false;
+    }
+    ui.saveHelp.textContent = asset.file
+      ? '保存会将导入的媒体文件写入对应素材目录，并更新项目素材目录。'
+      : state.projectRoot ? '选择上方“导入声效”或“导入原画”添加媒体文件。' : '连接项目目录后可导入并管理媒体文件。';
+    ui.preview.hidden = true;
+    ui.emptyPreview.hidden = true;
+    if (asset.path && asset.status === 'imported') {
+      try {
+        const media = state.projectRoot ? await readFromProject(asset.path) : null;
+        const mediaUrl = media ? URL.createObjectURL(media) : new URL(asset.path, rootPath).href;
+        if (asset.type === 'sound') {
+          ui.audioPreview.src = mediaUrl;
+          ui.audioPreview.hidden = false;
+        } else {
+          ui.mediaPreview.src = mediaUrl;
+          ui.mediaPreview.hidden = false;
+          if (media) ui.mediaPreview.dataset.objectUrl = mediaUrl;
+        }
+      } catch (error) {
+        ui.catalogStatus.textContent = `素材无法读取：${error.message}`;
+      }
+    }
+    if (asset.file) {
+      if (asset.type === 'sound') {
+        ui.audioPreview.src = URL.createObjectURL(asset.file);
+        ui.audioPreview.hidden = false;
+      } else {
+        ui.mediaPreview.src = URL.createObjectURL(asset.file);
+        ui.mediaPreview.hidden = false;
+      }
+    }
+    if (asset.status === 'empty') {
+      ui.mediaHint.textContent = '连接项目目录后，在上方选择“导入原画”开始建立插图素材库。';
+      ui.mediaHint.hidden = false;
+    }
+    if (updateList) renderList();
+    return;
+  }
   ui.validation.textContent = '正在读取 SVG…';
   ui.validation.dataset.state = '';
   try {
@@ -366,7 +464,7 @@ async function connectProject() {
 }
 
 async function writeProjectText(path, contents) {
-  if (!state.projectRoot || !safeAssetPath(path)) throw new Error('没有可写的项目目录');
+  if (!state.projectRoot || !safeProjectPath(path)) throw new Error('没有可写的项目目录');
   const parts = path.split('/');
   let directory = state.projectRoot;
   for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part);
@@ -379,6 +477,69 @@ async function writeProjectText(path, contents) {
     await writable.abort();
     throw error;
   }
+}
+
+async function writeProjectBlob(path, blob) {
+  if (!state.projectRoot || !safeProjectPath(path)) throw new Error('没有可写的项目目录');
+  const parts = path.split('/');
+  let directory = state.projectRoot;
+  for (const part of parts.slice(0, -1)) directory = await directory.getDirectoryHandle(part, { create: true });
+  const handle = await directory.getFileHandle(parts.at(-1), { create: true });
+  const writable = await handle.createWritable();
+  try {
+    await writable.write(blob);
+    await writable.close();
+  } catch (error) {
+    await writable.abort();
+    throw error;
+  }
+}
+
+async function queueMediaImport(file, type) {
+  if (!state.projectRoot) throw new Error('请先连接项目目录');
+  const soundTypes = {
+    '.wav': 'audio/wav', '.mp3': 'audio/mpeg', '.ogg': 'audio/ogg',
+    '.m4a': 'audio/mp4', '.flac': 'audio/flac', '.webm': 'audio/webm',
+  };
+  const imageTypes = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp' };
+  const extension = `.${file.name.split('.').at(-1).toLowerCase()}`;
+  const mime = (type === 'sound' ? soundTypes : imageTypes)[extension];
+  if (!mime || (file.type && file.type !== mime)) throw new Error('文件类型与扩展名不匹配。');
+  const maxBytes = type === 'sound' ? 30 * 1024 * 1024 : 20 * 1024 * 1024;
+  if (file.size > maxBytes) throw new Error(`文件过大（${type === 'sound' ? '30' : '20'} MiB 上限）。`);
+  if (type === 'illustration') {
+    const bitmap = await createImageBitmap(file);
+    const { width, height } = bitmap;
+    bitmap.close();
+    if (width > 8192 || height > 8192 || width * height > 40_000_000) {
+      throw new Error('插图最大尺寸为 8192 × 8192，且总像素不超过 40,000,000。');
+    }
+  }
+  const baseName = file.name.slice(0, -extension.length)
+    .normalize('NFKD').replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 70) || 'asset';
+  const path = `assets/${type === 'sound' ? 'audio' : 'illustrations'}/${baseName}${extension}`;
+  const existing = state.catalog.find((asset) => asset.path === path);
+  if (existing && !window.confirm(`已存在 ${path}，保存时将替换原文件。继续吗？`)) return;
+  const asset = existing || {
+    id: `${type}-${baseName}-${extension.slice(1)}`.toLowerCase(),
+    type,
+    name: file.name,
+    path,
+    status: 'imported',
+    description: type === 'sound' ? '导入的游戏声音素材。' : '导入的原画或插图素材。',
+  };
+  asset.name = file.name;
+  asset.path = path;
+  asset.status = 'imported';
+  asset.file = file;
+  state.pendingFile = file;
+  if (!existing) state.catalog.push(asset);
+  if (!state.assets.some((entry) => entry.id === asset.id)) state.assets.push(asset);
+  await selectAsset(asset, true, true);
+  ui.dirty.textContent = '媒体文件尚未保存';
+  ui.dirty.dataset.dirty = 'true';
+  ui.save.disabled = false;
+  setConnection(`已载入 ${file.name}；点击“保存素材”写入 ${path}`);
 }
 
 function findSymbolMarkup(source, iconId) {
@@ -513,7 +674,26 @@ function downloadAsset() {
 }
 
 async function saveAsset() {
-  if (!state.selected || !validateSvg(ui.source.value).valid) return;
+  if (!state.selected) return;
+  if (['sound', 'illustration'].includes(state.selected.type)) {
+    if (!state.selected.file || !state.projectRoot) return;
+    try {
+      await writeProjectBlob(state.selected.path, state.selected.file);
+      state.selected.file = null;
+      state.pendingFile = null;
+      const catalog = state.catalog.map(({ file, ...asset }) => asset);
+      await writeProjectText('design/management/asset-catalog.json', `${JSON.stringify({ version: 1, assets: catalog }, null, 2)}\n`);
+      ui.dirty.textContent = '已保存';
+      ui.dirty.dataset.dirty = 'false';
+      ui.save.disabled = true;
+      ui.catalogStatus.textContent = `状态：已导入 · ${state.selected.path}`;
+      setConnection(`媒体素材已保存：${state.selected.path}`, 'connected');
+    } catch (error) {
+      setConnection(`媒体素材保存失败：${error.message}`, 'error');
+    }
+    return;
+  }
+  if (!validateSvg(ui.source.value).valid) return;
   if (!state.projectRoot) {
     downloadAsset();
     return;
@@ -590,6 +770,24 @@ ui.replacePng.addEventListener('change', async () => {
     await replaceWithPng(file);
   } catch (error) {
     setConnection(`PNG 转换失败：${error.message}`, 'error');
+  }
+});
+ui.importAudio.addEventListener('change', async () => {
+  const file = ui.importAudio.files?.[0];
+  ui.importAudio.value = '';
+  try {
+    if (file) await queueMediaImport(file, 'sound');
+  } catch (error) {
+    setConnection(`声效导入失败：${error.message}`, 'error');
+  }
+});
+ui.importIllustration.addEventListener('change', async () => {
+  const file = ui.importIllustration.files?.[0];
+  ui.importIllustration.value = '';
+  try {
+    if (file) await queueMediaImport(file, 'illustration');
+  } catch (error) {
+    setConnection(`原画导入失败：${error.message}`, 'error');
   }
 });
 ui.drawIcon.addEventListener('click', async () => {

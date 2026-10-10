@@ -23,7 +23,7 @@
       <div>
         <p class="eyebrow">LOCAL DEVELOPMENT · ASSET WORKBENCH</p>
         <h1>项目管理台</h1>
-        <p>浏览、预览和编辑已登记的角色与图标 SVG。连接项目目录后可直接保存；不支持目录访问的浏览器可下载替换文件。</p>
+        <p>统一查看角色、图标、声效、原画插图与故事设定。连接项目目录后可编辑 SVG、归档媒体文件并预览素材。</p>
       </div>
       <div class="actions">
         <button class="button secondary" id="connectProject" type="button">连接项目目录</button>
@@ -41,6 +41,9 @@
           <button type="button" class="filter active" data-filter="all" aria-pressed="true">全部</button>
           <button type="button" class="filter" data-filter="character" aria-pressed="false">角色</button>
           <button type="button" class="filter" data-filter="icon" aria-pressed="false">图标</button>
+          <button type="button" class="filter" data-filter="sound" aria-pressed="false">声效</button>
+          <button type="button" class="filter" data-filter="illustration" aria-pressed="false">原画</button>
+          <button type="button" class="filter" data-filter="lore" aria-pressed="false">故事</button>
         </div>
         <div id="assetList" class="asset-list" aria-label="素材列表"></div>
       </aside>
@@ -52,6 +55,8 @@
             <button class="button secondary" id="drawIcon" type="button" disabled>绘制当前图标</button>
             <label class="button secondary upload-button">PNG 替换<input id="replacePng" type="file" accept="image/png,.png" disabled></label>
             <label class="button secondary upload-button">替换 SVG<input id="replaceFile" type="file" accept=".svg,image/svg+xml" disabled></label>
+            <label class="button secondary upload-button media-import">导入声效<input id="importAudio" type="file" accept="audio/*,.wav,.mp3,.ogg,.m4a,.flac"></label>
+            <label class="button secondary upload-button media-import">导入原画<input id="importIllustration" type="file" accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"></label>
           </div>
         </div>
 
@@ -70,6 +75,16 @@
           </div>
           <div class="canvas-scroll"><canvas id="pixelCanvas" width="32" height="32" aria-label="32 乘 32 像素画布"></canvas></div>
           <p class="drawing-hint">单击或拖动绘制；橡皮擦恢复透明。应用只会更改编辑器内容，仍需点击“保存素材”写入文件。</p>
+        </section>
+
+        <section id="catalogDetails" class="catalog-details" hidden aria-live="polite">
+          <p class="eyebrow" id="catalogCategory"></p>
+          <p id="catalogDescription"></p>
+          <p id="catalogStatus"></p>
+          <a id="catalogSource" target="_blank" rel="noopener noreferrer" hidden>打开素材源</a>
+          <audio id="audioPreview" controls preload="none" hidden></audio>
+          <img id="mediaPreview" alt="素材预览" hidden>
+          <p id="mediaHint" class="drawing-hint" hidden></p>
         </section>
 
         <div class="preview-stage">
@@ -94,7 +109,7 @@
     <section class="guide">
       <p class="eyebrow">SAFE WORKFLOW</p>
       <p><strong>建议：</strong>连接项目根目录后编辑；保存前确认预览与路径。素材替换不会自动提交代码，也不会修改游戏数据。图标运行时使用 <code>assets/icons.bundle.svg</code>，生成图标的源文件是 <code>assets/game-icons.svg</code>。</p>
-      <p id="runtimeHint">若素材无法加载，请从仓库根目录启动本地静态服务器后访问本页；也可用上方按钮授权项目目录。</p>
+      <p id="runtimeHint">若素材无法加载，请从仓库根目录启动本地静态服务器后访问本页；要导入声音或插图，请连接项目根目录并授权读写。</p>
     </section>
   </main>
   <footer>Pixel League · 本地开发工具 · 保存前请在游戏中验证素材</footer>

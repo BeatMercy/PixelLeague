@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "audio-attack-hit",
+      "type": "sound",
+      "name": "命中音效",
+      "path": "js/sound.js",
+      "status": "procedural",
+      "description": "由 Web Audio 实时合成；物理、魔法和真实伤害使用不同音色与参数。目前没有独立音频样本。",
+      "owner": "SoundSystem.playAttackHit"
+    },
+    {
+      "id": "audio-kill",
+      "type": "sound",
+      "name": "击杀音效",
+      "path": "js/sound.js",
+      "status": "procedural",
+      "description": "由 Web Audio 合成；精英和首领使用不同音高、时长与噪声。",
+      "owner": "SoundSystem.playKill"
+    },
+    {
+      "id": "audio-design-guide",
+      "type": "sound",
+      "name": "音效设计参考",
+      "path": "soundeffect.html",
+      "status": "design",
+      "description": "音效系统设计、分层与实现参考页面。"
+    },
+    {
+      "id": "illustration-collection",
+      "type": "illustration",
+      "name": "原画与插图",
+      "status": "empty",
+      "description": "目前仓库还没有独立原画/插图。导入的 PNG、JPEG 或 WebP 会作为原始图片保存，不会像图标导入那样转成像素 SVG。",
+      "path": "assets/illustrations"
+    },
+    {
+      "id": "story-broken-ridge",
+      "type": "lore",
+      "name": "断岭之哨",
+      "path": "design/story/01-broken-ridge-watch.md",
+      "status": "proposal",
+      "description": "边境游侠追查魔兽异动与封印真相；适配五段区域的线性冒险。"
+    },
+    {
+      "id": "story-thirteenth-chime",
+      "type": "lore",
+      "name": "第十三声钟鸣",
+      "path": "design/story/02-thirteenth-chime.md",
+      "status": "proposal",
+      "description": "修钟匠在小镇时间循环中寻找源头；将 Roguelike 重开融入叙事。"
+    },
+    {
+      "id": "story-mana-vein",
+      "type": "lore",
+      "name": "魔晶矿脉",
+      "path": "design/story/03-mana-vein.md",
+      "status": "proposal",
+      "description": "机械师与雇佣兵深入危险矿脉；围绕资源与势力冲突展开群像故事。"
+    }
+  ]
+}
