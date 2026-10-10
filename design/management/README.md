@@ -12,10 +12,11 @@
 6. “导入声效”接受 WAV、MP3、OGG、M4A、FLAC、WebM，单文件不超过 30 MiB；“导入原画”接受 PNG、JPEG、WebP，单文件不超过 20 MiB、最大 8192×8192 和 40,000,000 像素。导入文件保存在 `assets/audio/` 或 `assets/illustrations/`，并登记到 `asset-catalog.json`。
 7. 如浏览器不支持文件系统目录访问，SVG 仍可下载替换；音频和原画导入需要连接项目目录。
 8. 打开游戏和图标页，检查替换结果，再按下方开发流程提交变更。
+9. 要验证或发布实际的静态游戏包，在仓库根目录执行 `node scripts/build-assets.mjs`，再从 `dist/` 启动本地服务器检查；详细说明见 [`assets/README.md`](../../assets/README.md)。
 
 声效条目当前指向 `js/sound.js` 的 Web Audio 程序合成事件；原画库目前为空；三份角色故事是候选方案，不代表已选定主线。目录清单 `asset-catalog.json` 管理这几类的用途、来源和状态。添加音频文件仅完成素材归档和预览，不会自动替换程序合成音或接入游戏播放逻辑；原画导入也不会自动加入游戏 UI。
 
-控制台保存的 SVG 最多 2 MiB，并阻止脚本、事件属性和外部资源引用。PNG 转换会把相邻相同颜色/透明度的像素合并成 SVG 矩形；浏览器授权仅在本地有效。它不会代替 Git 提交、游戏运行验证或备份。图标的单独 SVG 文件是生成产物；图标源文件是 `assets/game-icons.svg`，游戏加载的是 `assets/icons.bundle.svg`。连接项目目录后保存图标会同步更新三者；批量修改图标源后，在 Windows 开发环境执行 `node scripts/build-icons.mjs` 生成产物。
+控制台保存的 SVG 最多 2 MiB，并阻止脚本、事件属性和外部资源引用。PNG 转换会把相邻相同颜色/透明度的像素合并成 SVG 矩形；浏览器授权仅在本地有效。它不会代替 Git 提交、游戏运行验证或备份。图标的单独 SVG 文件是生成产物；图标源文件是 `assets/game-icons.svg`，游戏加载的是 `assets/icons.bundle.svg`。连接项目目录后保存图标会同步更新三者；运行 `node scripts/build-assets.mjs` 可检查角色/目录资源、重新生成图标和 `dist/` 游戏包。
 
 ## 管理组件与职责
 

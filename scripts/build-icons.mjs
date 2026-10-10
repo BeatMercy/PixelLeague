@@ -13,7 +13,9 @@ function readAttribute(attributes, name) {
 export async function buildIcons(projectRoot = root) {
   const sourcePath = path.join(projectRoot, 'assets/game-icons.svg');
   const source = await fs.readFile(sourcePath, 'utf8');
-  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:script|foreignObject|iframe|object|embed)\b/i.test(source)) {
+  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:script|foreignObject|iframe|object|embed|animate|animateTransform|animateMotion|set|discard)\b/i.test(source)
+    || /\son[a-z]+\s*=|\b(?:xlink:)?href\s*=\s*(['"])(?!#)[\s\S]*?\1/i.test(source)
+    || /javascript\s*:|@import|expression\s*\(|url\(\s*['"]?(?:https?:|data:|\/\/)/i.test(source)) {
     throw new Error('Icon source contains unsupported active or external content.');
   }
 
@@ -28,7 +30,8 @@ export async function buildIcons(projectRoot = root) {
     id: readAttribute(match[1], 'id'),
     viewBox: readAttribute(match[1], 'viewBox'),
   }));
-  if (!symbols.length || symbols.some((symbol) => !symbol.id || !symbol.viewBox)) {
+  if (!symbols.length || symbols.some((symbol) =>
+    !symbol.id || !/^[A-Za-z_][\w.-]*$/.test(symbol.id) || !symbol.viewBox || !/^[\d.eE+\-\s]+$/.test(symbol.viewBox))) {
     throw new Error('Icon source must contain symbols with id and viewBox attributes.');
   }
   if (new Set(symbols.map((symbol) => symbol.id)).size !== symbols.length) {
@@ -36,6 +39,9 @@ export async function buildIcons(projectRoot = root) {
   }
 
   const ids = new Set([...source.matchAll(/\bid\s*=\s*(["'])(.*?)\1/g)].map((match) => match[2]));
+  if (ids.size !== [...source.matchAll(/\bid\s*=\s*(["'])(.*?)\1/g)].length) {
+    throw new Error('Icon source contains duplicate IDs.');
+  }
   const missingReferences = [...source.matchAll(/(?:href|xlink:href)\s*=\s*(["'])#([^"']+)\1/gi)]
     .map((match) => match[2])
     .filter((id) => !ids.has(id));
@@ -44,7 +50,6 @@ export async function buildIcons(projectRoot = root) {
   const assetsDir = path.join(projectRoot, 'assets/icons');
   await fs.mkdir(assetsDir, { recursive: true });
   for (const symbol of symbols) {
-    if (!/^[\d.eE+\-\s]+$/.test(symbol.viewBox)) throw new Error(`Invalid viewBox for icon ${symbol.id}.`);
     const svgOpen = `<svg xmlns="${svgNamespace}" width="32" height="32" viewBox="${symbol.viewBox}">`;
     const icon = `${svgOpen}${definitions}${symbol.markup}<use href="#${symbol.id}"/></svg>\n`;
     await fs.writeFile(path.join(assetsDir, `${symbol.id}.svg`), icon);

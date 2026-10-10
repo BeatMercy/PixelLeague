@@ -20,8 +20,17 @@ async function ensureFile(projectRoot, relativePath, label) {
   }
   const target = path.resolve(projectRoot, relativePath);
   if (!isWithin(projectRoot, target)) throw new Error(`${label} escapes the project root: ${relativePath}`);
-  const stat = await fs.stat(target).catch(() => null);
-  if (!stat?.isFile()) throw new Error(`${label} is missing: ${relativePath}`);
+  const stat = await fs.lstat(target).catch(() => null);
+  if (!stat?.isFile() || stat.isSymbolicLink()) throw new Error(`${label} is missing or not a regular file: ${relativePath}`);
+}
+
+async function rejectSymlinks(target) {
+  const entries = await fs.readdir(target, { withFileTypes: true });
+  for (const entry of entries) {
+    const child = path.join(target, entry.name);
+    if (entry.isSymbolicLink()) throw new Error(`Refusing to package symbolic link: ${child}`);
+    if (entry.isDirectory()) await rejectSymlinks(child);
+  }
 }
 
 export async function buildAssets(projectRoot = root, outputPath = path.join(projectRoot, 'dist')) {
@@ -80,11 +89,15 @@ export async function buildAssets(projectRoot = root, outputPath = path.join(pro
 
   for (const entry of ['assets', 'css', 'js', 'design', 'docs']) {
     const source = path.join(projectRoot, entry);
+    await rejectSymlinks(source);
     await fs.cp(source, path.join(outputPath, entry), { recursive: true, force: true });
   }
   for (const entry of await fs.readdir(projectRoot, { withFileTypes: true })) {
     if (entry.isFile() && /\.(?:html|md)$/i.test(entry.name)) {
-      await fs.copyFile(path.join(projectRoot, entry.name), path.join(outputPath, entry.name));
+      const source = path.join(projectRoot, entry.name);
+      const stat = await fs.lstat(source);
+      if (stat.isSymbolicLink()) throw new Error(`Refusing to package symbolic link: ${source}`);
+      await fs.copyFile(source, path.join(outputPath, entry.name));
     }
   }
 
