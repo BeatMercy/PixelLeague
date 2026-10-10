@@ -72,7 +72,7 @@ async function loadAssets() {
   renderList();
   if (state.selected) {
     const updated = state.assets.find((asset) => asset.id === state.selected.id);
-    if (updated) await selectAsset(updated, false);
+    if (updated) await selectAsset(updated, false, true);
   }
 }
 
@@ -157,7 +157,10 @@ function refreshPreview() {
   ui.emptyPreview.hidden = true;
 }
 
-async function selectAsset(asset, updateList = true) {
+async function selectAsset(asset, updateList = true, force = false) {
+  if (!force && state.selected?.id === asset.id) return;
+  if (!force && ui.dirty.dataset.dirty === 'true' && state.selected?.id !== asset.id
+    && !window.confirm('当前素材有未保存修改，切换后将丢失这些修改。继续吗？')) return;
   state.selected = asset;
   ui.name.textContent = asset.name;
   ui.path.textContent = asset.path;
@@ -177,7 +180,7 @@ async function selectAsset(asset, updateList = true) {
     ui.dirty.textContent = '未修改';
     ui.dirty.dataset.dirty = 'false';
     ui.saveHelp.textContent = asset.type === 'icon'
-      ? '此文件由 assets/game-icons.svg 生成；更新源图标并重新生成 bundle，才能反映到游戏中。'
+      ? '连接项目目录后，保存会同步更新图标源集合和游戏 bundle；否则需手动同步生成文件。'
       : '保存后会直接替换游戏读取的素材；建议先在浏览器中验证。';
     refreshPreview();
     if (updateList) renderList();
@@ -195,10 +198,14 @@ async function connectProject() {
     setConnection('此浏览器不支持目录访问；请下载文件或使用支持 File System Access API 的浏览器。', 'error');
     return;
   }
+  const discardChanges = ui.dirty.dataset.dirty === 'true';
+  if (discardChanges
+    && !window.confirm('当前素材有未保存修改，连接项目目录会重新载入素材并丢失这些修改。继续吗？')) return;
   try {
     const directory = await window.showDirectoryPicker({ mode: 'readwrite' });
     const assets = await directory.getDirectoryHandle('assets');
     await assets.getDirectoryHandle('character');
+    if (discardChanges) ui.dirty.dataset.dirty = 'false';
     state.projectRoot = directory;
     await loadAssets();
     setConnection(`已连接：${directory.name}`, 'connected');
@@ -224,6 +231,36 @@ async function writeProjectText(path, contents) {
   }
 }
 
+function updateIconCollection(collectionSource, iconSource, iconId) {
+  const collection = new DOMParser().parseFromString(collectionSource, 'image/svg+xml');
+  const icon = new DOMParser().parseFromString(iconSource, 'image/svg+xml');
+  if (collection.querySelector('parsererror') || icon.querySelector('parsererror')) {
+    throw new Error('图标 SVG 集合格式无效');
+  }
+  const symbol = [...icon.querySelectorAll('symbol[id]')].find((item) => item.id === iconId);
+  const target = [...collection.querySelectorAll('symbol[id]')].find((item) => item.id === iconId);
+  if (!symbol || !target) throw new Error(`无法在 SVG 中找到图标 ${iconId}`);
+
+  const targetRoot = collection.documentElement;
+  const sourceDefs = icon.querySelector('defs');
+  let targetDefs = collection.querySelector('defs');
+  if (sourceDefs) {
+    if (!targetDefs) {
+      targetDefs = collection.createElementNS('http://www.w3.org/2000/svg', 'defs');
+      targetRoot.insertBefore(targetDefs, targetRoot.firstChild);
+    }
+    const knownIds = new Set([...targetDefs.querySelectorAll('[id]')].map((item) => item.id));
+    for (const definition of [...sourceDefs.children]) {
+      if (definition.id && !knownIds.has(definition.id)) {
+        targetDefs.append(collection.importNode(definition, true));
+        knownIds.add(definition.id);
+      }
+    }
+  }
+  target.replaceWith(collection.importNode(symbol, true));
+  return new XMLSerializer().serializeToString(collection);
+}
+
 function downloadAsset() {
   const blob = new Blob([ui.source.value], { type: 'image/svg+xml' });
   const link = document.createElement('a');
@@ -241,11 +278,24 @@ async function saveAsset() {
     return;
   }
   try {
-    await writeProjectText(state.selected.path, ui.source.value);
+    const outputs = [{ path: state.selected.path, contents: ui.source.value }];
+    if (state.selected.type === 'icon') {
+      const [sourceCollection, bundle] = await Promise.all([
+        readProjectText('assets/game-icons.svg'),
+        readProjectText('assets/icons.bundle.svg'),
+      ]);
+      outputs.push(
+        { path: 'assets/game-icons.svg', contents: updateIconCollection(sourceCollection, ui.source.value, state.selected.id) },
+        { path: 'assets/icons.bundle.svg', contents: updateIconCollection(bundle, ui.source.value, state.selected.id) },
+      );
+    }
+    for (const output of outputs) await writeProjectText(output.path, output.contents);
     state.selected.lastSaved = ui.source.value;
     ui.dirty.textContent = '已保存';
     ui.dirty.dataset.dirty = 'false';
-    setConnection(`已保存：${state.selected.path}`, 'connected');
+    setConnection(state.selected.type === 'icon'
+      ? `已保存图标及其源集合与 bundle：${state.selected.id}`
+      : `已保存：${state.selected.path}`, 'connected');
     renderList();
   } catch (error) {
     setConnection(`保存失败：${error.message}`, 'error');
