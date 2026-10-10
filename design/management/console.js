@@ -1,7 +1,7 @@
 'use strict';
 
 const rootPath = new URL('../../', window.location.href);
-const state = { assets: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, previewRequest: 0 };
+const state = { assets: [], filter: 'all', query: '', selected: null, projectRoot: null, previewUrl: null, previewRequest: 0, drawing: false, erasing: false, strokeStart: null, history: [] };
 const ui = {
   list: document.querySelector('#assetList'),
   count: document.querySelector('#assetCount'),
@@ -18,7 +18,19 @@ const ui = {
   save: document.querySelector('#saveAsset'),
   saveHelp: document.querySelector('#saveHelp'),
   replace: document.querySelector('#replaceFile'),
+  replacePng: document.querySelector('#replacePng'),
+  drawIcon: document.querySelector('#drawIcon'),
+  drawingPanel: document.querySelector('#drawingPanel'),
+  closeDrawing: document.querySelector('#closeDrawing'),
+  pixelCanvas: document.querySelector('#pixelCanvas'),
+  brushColor: document.querySelector('#brushColor'),
+  brushSize: document.querySelector('#brushSize'),
+  eraser: document.querySelector('#eraser'),
+  undoDrawing: document.querySelector('#undoDrawing'),
+  clearDrawing: document.querySelector('#clearDrawing'),
+  applyDrawing: document.querySelector('#applyDrawing'),
 };
+const pixelContext = ui.pixelCanvas.getContext('2d', { willReadFrequently: true });
 
 function setConnection(message, status = '') {
   ui.connection.textContent = message;
@@ -185,6 +197,9 @@ async function selectAsset(asset, updateList = true, force = false) {
   ui.source.disabled = true;
   ui.save.disabled = true;
   ui.replace.disabled = true;
+  ui.replacePng.disabled = true;
+  ui.drawIcon.disabled = true;
+  ui.drawingPanel.hidden = true;
   ui.validation.textContent = '正在读取 SVG…';
   ui.validation.dataset.state = '';
   try {
@@ -194,6 +209,8 @@ async function selectAsset(asset, updateList = true, force = false) {
     ui.source.value = source;
     ui.source.disabled = false;
     ui.replace.disabled = false;
+    ui.replacePng.disabled = false;
+    ui.drawIcon.disabled = asset.type !== 'icon';
     ui.dirty.textContent = '未修改';
     ui.dirty.dataset.dirty = 'false';
     ui.saveHelp.textContent = asset.type === 'icon'
@@ -207,6 +224,122 @@ async function selectAsset(asset, updateList = true, force = false) {
     ui.emptyPreview.hidden = false;
     ui.preview.hidden = true;
     setConnection('素材读取失败：请启动本地服务器或连接项目目录', 'error');
+  }
+}
+
+async function loadDrawingCanvas() {
+  const url = URL.createObjectURL(new Blob([ui.source.value], { type: 'image/svg+xml' }));
+  try {
+    const image = new Image();
+    image.src = url;
+    await image.decode();
+    pixelContext.clearRect(0, 0, ui.pixelCanvas.width, ui.pixelCanvas.height);
+    pixelContext.drawImage(image, 0, 0, ui.pixelCanvas.width, ui.pixelCanvas.height);
+    state.history = [];
+    ui.undoDrawing.disabled = true;
+    ui.eraser.setAttribute('aria-pressed', 'false');
+    state.erasing = false;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+function saveDrawingSnapshot() {
+  if (state.history.length >= 40) state.history.shift();
+  state.history.push(pixelContext.getImageData(0, 0, ui.pixelCanvas.width, ui.pixelCanvas.height));
+  ui.undoDrawing.disabled = false;
+}
+
+function paintPixel(x, y) {
+  const size = Number(ui.brushSize.value);
+  pixelContext.globalCompositeOperation = state.erasing ? 'destination-out' : 'source-over';
+  pixelContext.fillStyle = ui.brushColor.value;
+  pixelContext.fillRect(x - Math.floor((size - 1) / 2), y - Math.floor((size - 1) / 2), size, size);
+  pixelContext.globalCompositeOperation = 'source-over';
+}
+
+function drawStrokeTo(x, y) {
+  if (!state.strokeStart) {
+    paintPixel(x, y);
+    state.strokeStart = { x, y };
+    return;
+  }
+  let { x: fromX, y: fromY } = state.strokeStart;
+  const dx = Math.abs(x - fromX);
+  const dy = Math.abs(y - fromY);
+  const stepX = fromX < x ? 1 : -1;
+  const stepY = fromY < y ? 1 : -1;
+  let error = dx - dy;
+  while (fromX !== x || fromY !== y) {
+    const doubledError = 2 * error;
+    if (doubledError > -dy) { error -= dy; fromX += stepX; }
+    if (doubledError < dx) { error += dx; fromY += stepY; }
+    paintPixel(fromX, fromY);
+  }
+  state.strokeStart = { x, y };
+}
+
+function pointerPixel(event) {
+  const rect = ui.pixelCanvas.getBoundingClientRect();
+  return {
+    x: Math.max(0, Math.min(31, Math.floor((event.clientX - rect.left) * 32 / rect.width))),
+    y: Math.max(0, Math.min(31, Math.floor((event.clientY - rect.top) * 32 / rect.height))),
+  };
+}
+
+function rasterToSvg(imageData, width, height) {
+  const rows = [];
+  for (let y = 0; y < height; y++) {
+    let x = 0;
+    while (x < width) {
+      const offset = (y * width + x) * 4;
+      const red = imageData.data[offset];
+      const green = imageData.data[offset + 1];
+      const blue = imageData.data[offset + 2];
+      const alpha = imageData.data[offset + 3];
+      if (!alpha) { x++; continue; }
+      let run = 1;
+      while (x + run < width) {
+        const next = (y * width + x + run) * 4;
+        if (imageData.data[next] !== red || imageData.data[next + 1] !== green
+          || imageData.data[next + 2] !== blue || imageData.data[next + 3] !== alpha) break;
+        run++;
+      }
+      const color = `#${[red, green, blue].map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+      const opacity = alpha === 255 ? '' : ` fill-opacity="${alpha / 255}"`;
+      rows.push(`<rect x="${x}" y="${y}" width="${run}" height="1" fill="${color}"${opacity}/>`);
+      x += run;
+    }
+  }
+  const source = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" shape-rendering="crispEdges">${rows.join('')}</svg>\n`;
+  if (source.length > 2 * 1024 * 1024) throw new Error('转换后的 SVG 超过 2 MiB，请缩小图片或简化颜色。');
+  return source;
+}
+
+async function replaceWithPng(file) {
+  if (!file || !state.selected) return;
+  if (file.size > 2 * 1024 * 1024) throw new Error('PNG 文件过大（上限 2 MiB）。');
+  if (file.type && file.type !== 'image/png') throw new Error('请选择 PNG 图片。');
+  const bytes = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+  const signature = [137, 80, 78, 71, 13, 10, 26, 10];
+  if (!signature.every((byte, index) => bytes[index] === byte)) throw new Error('文件内容不是有效的 PNG 图片。');
+  const bitmap = await createImageBitmap(file);
+  try {
+    if (bitmap.width > 256 || bitmap.height > 256 || bitmap.width * bitmap.height > 32768) {
+      throw new Error('PNG 最大尺寸为 256 × 256，且总像素不超过 32,768。');
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    context.drawImage(bitmap, 0, 0);
+    ui.source.value = rasterToSvg(context.getImageData(0, 0, canvas.width, canvas.height), canvas.width, canvas.height);
+    ui.dirty.textContent = 'PNG 已转换，尚未保存';
+    ui.dirty.dataset.dirty = 'true';
+    refreshPreview();
+    setConnection(`PNG 已转换为透明像素 SVG：${bitmap.width} × ${bitmap.height}`, '');
+  } finally {
+    bitmap.close();
   }
 }
 
@@ -448,6 +581,73 @@ ui.replace.addEventListener('change', async () => {
   ui.source.value = source;
   ui.dirty.textContent = '有未保存修改';
   ui.dirty.dataset.dirty = 'true';
+  refreshPreview();
+});
+ui.replacePng.addEventListener('change', async () => {
+  const file = ui.replacePng.files?.[0];
+  ui.replacePng.value = '';
+  try {
+    await replaceWithPng(file);
+  } catch (error) {
+    setConnection(`PNG 转换失败：${error.message}`, 'error');
+  }
+});
+ui.drawIcon.addEventListener('click', async () => {
+  if (state.selected?.type !== 'icon') return;
+  ui.drawingPanel.hidden = false;
+  try {
+    await loadDrawingCanvas();
+    ui.pixelCanvas.focus();
+  } catch {
+    setConnection('无法载入当前图标到画板。', 'error');
+    ui.drawingPanel.hidden = true;
+  }
+});
+ui.closeDrawing.addEventListener('click', () => {
+  ui.drawingPanel.hidden = true;
+  state.strokeStart = null;
+});
+ui.pixelCanvas.addEventListener('pointerdown', (event) => {
+  if (event.button !== 0) return;
+  event.preventDefault();
+  saveDrawingSnapshot();
+  state.drawing = true;
+  ui.pixelCanvas.setPointerCapture(event.pointerId);
+  const point = pointerPixel(event);
+  state.strokeStart = null;
+  drawStrokeTo(point.x, point.y);
+});
+ui.pixelCanvas.addEventListener('pointermove', (event) => {
+  if (!state.drawing) return;
+  const point = pointerPixel(event);
+  drawStrokeTo(point.x, point.y);
+});
+function finishDrawingStroke() {
+  state.drawing = false;
+  state.strokeStart = null;
+}
+ui.pixelCanvas.addEventListener('pointerup', finishDrawingStroke);
+ui.pixelCanvas.addEventListener('pointercancel', finishDrawingStroke);
+ui.eraser.addEventListener('click', () => {
+  state.erasing = !state.erasing;
+  ui.eraser.setAttribute('aria-pressed', String(state.erasing));
+});
+ui.undoDrawing.addEventListener('click', () => {
+  const previous = state.history.pop();
+  if (!previous) return;
+  pixelContext.putImageData(previous, 0, 0);
+  ui.undoDrawing.disabled = state.history.length === 0;
+});
+ui.clearDrawing.addEventListener('click', () => {
+  saveDrawingSnapshot();
+  pixelContext.clearRect(0, 0, ui.pixelCanvas.width, ui.pixelCanvas.height);
+});
+ui.applyDrawing.addEventListener('click', () => {
+  if (state.selected?.type !== 'icon') return;
+  ui.source.value = rasterToSvg(pixelContext.getImageData(0, 0, 32, 32), 32, 32);
+  ui.dirty.textContent = '画板内容未保存';
+  ui.dirty.dataset.dirty = 'true';
+  ui.drawingPanel.hidden = true;
   refreshPreview();
 });
 ui.save.addEventListener('click', saveAsset);
