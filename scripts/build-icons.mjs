@@ -1,43 +1,65 @@
-import { execFileSync } from 'node:child_process';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const command = String.raw`
-$ErrorActionPreference = 'Stop'
-$sourcePath = [System.IO.Path]::GetFullPath('assets/game-icons.svg')
-$outputPath = [System.IO.Path]::GetFullPath('assets/icons')
-$bundlePath = [System.IO.Path]::GetFullPath('assets/icons.bundle.svg')
-$sourceDoc = [xml](Get-Content -Raw $sourcePath)
-$ns = [System.Xml.XmlNamespaceManager]::new($sourceDoc.NameTable)
-$ns.AddNamespace('svg', 'http://www.w3.org/2000/svg')
-$root = $sourceDoc.DocumentElement
-$defs = $root.SelectSingleNode('./svg:defs', $ns)
-$symbols = $root.SelectNodes('./svg:symbol', $ns)
-if (-not $defs -or $symbols.Count -eq 0) { throw "No SVG symbols found in $sourcePath" }
-New-Item -ItemType Directory -Force -Path $outputPath | Out-Null
-function New-AssetDocument($symbolNodes) {
-  $doc = [System.Xml.XmlDocument]::new()
-  $svg = $doc.CreateElement('svg', 'http://www.w3.org/2000/svg')
-  $svg.SetAttribute('width', '32')
-  $svg.SetAttribute('height', '32')
-  $svg.SetAttribute('viewBox', '0 0 32 32')
-  [void]$doc.AppendChild($svg)
-  [void]$svg.AppendChild($doc.ImportNode($defs, $true))
-  foreach ($symbol in $symbolNodes) { [void]$svg.AppendChild($doc.ImportNode($symbol, $true)) }
-  return $doc
-}
-foreach ($symbol in $symbols) {
-  $doc = New-AssetDocument @($symbol)
-  $doc.DocumentElement.SetAttribute('viewBox', $symbol.GetAttribute('viewBox'))
-  $use = $doc.CreateElement('use', 'http://www.w3.org/2000/svg')
-  $use.SetAttribute('href', '#' + $symbol.GetAttribute('id'))
-  [void]$doc.DocumentElement.AppendChild($use)
-  $doc.Save((Join-Path $outputPath ($symbol.GetAttribute('id') + '.svg')))
-}
-$bundle = New-AssetDocument $symbols
-$bundle.Save($bundlePath)
-Write-Output "Exported $($symbols.Count) standalone SVG icons and $bundlePath."
-`;
+const svgNamespace = 'http://www.w3.org/2000/svg';
 
-execFileSync('powershell.exe', ['-NoProfile', '-Command', command], { cwd: root, stdio: 'inherit' });
+function readAttribute(attributes, name) {
+  const match = attributes.match(new RegExp(`(?:^|\\s)${name}\\s*=\\s*(["'])(.*?)\\1`, 'i'));
+  return match?.[2] ?? null;
+}
+
+export async function buildIcons(projectRoot = root) {
+  const sourcePath = path.join(projectRoot, 'assets/game-icons.svg');
+  const source = await fs.readFile(sourcePath, 'utf8');
+  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:script|foreignObject|iframe|object|embed)\b/i.test(source)) {
+    throw new Error('Icon source contains unsupported active or external content.');
+  }
+
+  const definitions = source.match(/<defs\b[^>]*>[\s\S]*?<\/defs\s*>/i)?.[0];
+  const rootOpen = source.match(/<svg\b([^>]*)>/i);
+  const rootClose = source.match(/<\/svg\s*>\s*$/i);
+  if (!definitions || !rootOpen || !rootClose) throw new Error(`Invalid SVG source: ${sourcePath}`);
+
+  const symbols = [...source.matchAll(/<symbol\b([^>]*)>([\s\S]*?)<\/symbol\s*>/gi)].map((match) => ({
+    markup: match[0],
+    attributes: match[1],
+    id: readAttribute(match[1], 'id'),
+    viewBox: readAttribute(match[1], 'viewBox'),
+  }));
+  if (!symbols.length || symbols.some((symbol) => !symbol.id || !symbol.viewBox)) {
+    throw new Error('Icon source must contain symbols with id and viewBox attributes.');
+  }
+  if (new Set(symbols.map((symbol) => symbol.id)).size !== symbols.length) {
+    throw new Error('Icon source contains duplicate symbol IDs.');
+  }
+
+  const ids = new Set([...source.matchAll(/\bid\s*=\s*(["'])(.*?)\1/g)].map((match) => match[2]));
+  const missingReferences = [...source.matchAll(/(?:href|xlink:href)\s*=\s*(["'])#([^"']+)\1/gi)]
+    .map((match) => match[2])
+    .filter((id) => !ids.has(id));
+  if (missingReferences.length) throw new Error(`Icon source has missing references: ${[...new Set(missingReferences)].join(', ')}`);
+
+  const assetsDir = path.join(projectRoot, 'assets/icons');
+  await fs.mkdir(assetsDir, { recursive: true });
+  for (const symbol of symbols) {
+    if (!/^[\d.eE+\-\s]+$/.test(symbol.viewBox)) throw new Error(`Invalid viewBox for icon ${symbol.id}.`);
+    const svgOpen = `<svg xmlns="${svgNamespace}" width="32" height="32" viewBox="${symbol.viewBox}">`;
+    const icon = `${svgOpen}${definitions}${symbol.markup}<use href="#${symbol.id}"/></svg>\n`;
+    await fs.writeFile(path.join(assetsDir, `${symbol.id}.svg`), icon);
+  }
+  const bundle = `${svgOpen}${definitions}${symbols.map((symbol) => symbol.markup).join('')}</svg>\n`;
+  await fs.writeFile(path.join(projectRoot, 'assets/icons.bundle.svg'), bundle);
+  return symbols.map(({ id, viewBox }) => ({ id, viewBox }));
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) {
+  try {
+    const icons = await buildIcons();
+    console.log(`Exported ${icons.length} standalone SVG icons and assets/icons.bundle.svg.`);
+  } catch (error) {
+    console.error(`Icon build failed: ${error.message}`);
+    process.exitCode = 1;
+  }
+}
