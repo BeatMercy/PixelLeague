@@ -60,7 +60,9 @@ async function loadAssets() {
       .map(([frame, path]) => ({ id: `${character}-${frame}`, name: `${character} · ${frame}`, group: character, type: 'character', frame, path })));
   const document = new DOMParser().parseFromString(iconsText, 'image/svg+xml');
   if (document.querySelector('parsererror')) throw new Error('图标集合 SVG 格式无效');
-  const icons = [...document.querySelectorAll('symbol[id]')].map((symbol) => ({
+  const icons = [...document.querySelectorAll('symbol[id]')]
+    .filter((symbol) => /^[A-Za-z_][\w.-]*$/.test(symbol.id))
+    .map((symbol) => ({
     id: symbol.id,
     name: symbol.id,
     group: '图标',
@@ -127,7 +129,7 @@ function validateSvg(source) {
     || !/<\/svg>\s*$/i.test(trimmed)) {
     return { valid: false, message: '无效的 SVG/XML 格式' };
   }
-  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:script|foreignObject|iframe|object|embed)\b/i.test(source)) {
+  if (/<!DOCTYPE|<!ENTITY|<\?xml-stylesheet|<(?:script|foreignObject|iframe|object|embed|animate|animateTransform|animateMotion|set|discard)\b/i.test(source)) {
     return { valid: false, message: '不允许使用脚本、外部实体或嵌入式内容' };
   }
   if (/\son[a-z]+\s*=|\b(?:xlink:)?href\s*=\s*(['"])(?!#)[\s\S]*?\1/i.test(source)) {
@@ -252,14 +254,119 @@ function findSymbolMarkup(source, iconId) {
   return match?.[0] || null;
 }
 
+function tagEnd(source, start) {
+  let quote = '';
+  for (let index = start; index < source.length; index++) {
+    const character = source[index];
+    if (quote) {
+      if (character === quote) quote = '';
+    } else if (character === '"' || character === "'") {
+      quote = character;
+    } else if (character === '>') {
+      return index;
+    }
+  }
+  return -1;
+}
+
+function elementEnd(source, start) {
+  const openingEnd = tagEnd(source, start);
+  if (openingEnd < 0) return -1;
+  const opening = source.slice(start, openingEnd + 1);
+  const name = opening.match(/^<([\w:.-]+)/)?.[1];
+  if (!name) return -1;
+  if (/\/\s*>$/.test(opening)) return openingEnd;
+  let depth = 1;
+  let cursor = openingEnd + 1;
+  while (depth && cursor < source.length) {
+    const next = source.indexOf('<', cursor);
+    if (next < 0) return -1;
+    if (source.startsWith('<!--', next)) {
+      const commentEnd = source.indexOf('-->', next + 4);
+      if (commentEnd < 0) return -1;
+      cursor = commentEnd + 3;
+      continue;
+    }
+    if (source.startsWith('<![CDATA[', next)) {
+      const cdataEnd = source.indexOf(']]>', next + 9);
+      if (cdataEnd < 0) return -1;
+      cursor = cdataEnd + 3;
+      continue;
+    }
+    const end = tagEnd(source, next);
+    if (end < 0) return -1;
+    const token = source.slice(next, end + 1);
+    const tokenName = token.match(/^<\/?([\w:.-]+)/)?.[1];
+    if (tokenName === name) {
+      if (/^<\//.test(token)) depth--;
+      else if (!/\/\s*>$/.test(token)) depth++;
+    }
+    cursor = end + 1;
+  }
+  return depth ? -1 : cursor - 1;
+}
+
+function topLevelElements(source) {
+  const elements = [];
+  let cursor = 0;
+  while (cursor < source.length) {
+    const start = source.indexOf('<', cursor);
+    if (start < 0) break;
+    if (source.startsWith('<!--', start)) {
+      const end = source.indexOf('-->', start + 4);
+      if (end < 0) break;
+      cursor = end + 3;
+      continue;
+    }
+    if (source[start + 1] === '/' || source[start + 1] === '!' || source[start + 1] === '?') {
+      const end = tagEnd(source, start);
+      if (end < 0) break;
+      cursor = end + 1;
+      continue;
+    }
+    const end = elementEnd(source, start);
+    if (end < 0) break;
+    elements.push(source.slice(start, end + 1));
+    cursor = end + 1;
+  }
+  return elements;
+}
+
+function iconSymbolMarkup(source, iconId) {
+  const existingSymbol = findSymbolMarkup(source, iconId);
+  if (existingSymbol) return { symbol: existingSymbol, definitions: [] };
+  const opening = source.match(/<svg\b([^>]*)>/i);
+  const closing = source.match(/<\/svg\s*>\s*$/i);
+  if (!opening || !closing) throw new Error(`无法从替换文件读取 SVG 图标 ${iconId}`);
+  const rootStart = opening.index + opening[0].length;
+  const inner = source.slice(rootStart, closing.index);
+  const viewBox = opening[1].match(/\bviewBox\s*=\s*(["'])(.*?)\1/i)?.[2];
+  const safeViewBox = viewBox && /^[\d.eE+\-\s]+$/.test(viewBox) ? viewBox : '0 0 32 32';
+  const definitionsBlock = inner.match(/<defs\b[^>]*>([\s\S]*?)<\/defs\s*>/i)?.[1] || '';
+  const contents = inner.replace(/<defs\b[^>]*>[\s\S]*?<\/defs\s*>/i, '');
+  const definitions = topLevelElements(definitionsBlock).filter((definition) => /\bid\s*=\s*(["']).+?\1/i.test(definition));
+  return { symbol: `<symbol id="${iconId}" viewBox="${safeViewBox}">${contents}</symbol>`, definitions };
+}
+
 function updateIconCollection(collectionSource, iconSource, iconId) {
   const collection = new DOMParser().parseFromString(collectionSource, 'image/svg+xml');
   if (collection.querySelector('parsererror')) throw new Error('图标 SVG 集合格式无效');
-  const symbolMarkup = findSymbolMarkup(iconSource, iconId);
+  const replacement = iconSymbolMarkup(iconSource, iconId);
   const target = [...collection.querySelectorAll('symbol[id]')].find((item) => item.id === iconId);
   const targetMarkup = target && findSymbolMarkup(collectionSource, iconId);
-  if (!symbolMarkup || !targetMarkup) throw new Error(`无法在 SVG 中找到图标 ${iconId}`);
-  return collectionSource.replace(targetMarkup, symbolMarkup);
+  if (!targetMarkup) throw new Error(`无法在 SVG 中找到图标 ${iconId}`);
+  let updated = collectionSource;
+  if (replacement.definitions.length) {
+    const existingIds = new Set([...collection.querySelectorAll('defs [id]')].map((item) => item.id));
+    const additions = replacement.definitions.filter((definition) => {
+      const id = definition.match(/\bid\s*=\s*(["'])(.*?)\1/i)?.[2];
+      if (!id || existingIds.has(id)) return false;
+      existingIds.add(id);
+      return true;
+    });
+    if (additions.length) updated = updated.replace(/<\/defs\s*>/i, `${additions.join('')}</defs>`);
+  }
+  return updated.replace(targetMarkup, replacement.symbol);
 }
 
 function downloadAsset() {
