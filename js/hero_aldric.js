@@ -19,7 +19,7 @@ const HERO_ALDRIC = {
         p.courageT = 1.5 + 0.5 * r; p.addShield(60 + 30 * r + (p.st.hp - p.hero.base.hp - p.hero.grow.hp * (p.level - 1)) * 0.15, 2.5);
         ringFx(p.x, p.y, 0.9, '#ffe070', 0.5);
       } },
-    E: { name: 'Judgment', icon: '🌀', cd: [11, 10, 9, 8, 7], cost: [0, 0, 0, 0, 0], aim: 'self',
+    E: { name: 'Judgment', icon: '🌀', cd: [11, 10, 9, 8, 7], cost: [0, 0, 0, 0, 0], area: 2.7, aim: 'self',
       desc: r => `Spin your sword for 3s, dealing <b>${8 + 6 * r} (+${30 + 2 * r}% AD)</b> physical damage per tick around you. Ticks scale with attack speed. Can crit.`,
       cast(p, tx, ty, r) { p.spin = 3 * (p.taken.a_spin ? 1.4 : 1); p.spinR = r; p.spinTick = 0; } },
     R: { name: 'Demacian Justice', icon: '⚔️', cd: [80, 65, 50], cost: [0, 0, 0], range: 4, aim: 'unit',

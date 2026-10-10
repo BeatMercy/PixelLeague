@@ -21,7 +21,7 @@ const HERO_VELA = {
           p.cd.Q *= hadVital && p.taken.v_pierce ? 0 : 0.5;
         }, 0.35);
       } },
-    W: { name: 'Riposte', icon: '🛡️', cd: [20, 18, 16, 14, 12], cost: [50, 50, 50, 50, 50], aim: 'point',
+    W: { name: 'Riposte', icon: '🛡️', cd: [20, 18, 16, 14, 12], cost: [50, 50, 50, 50, 50], range: 2.4, area: 1.2, aim: 'point',
       desc: r => `Parry all damage and crowd control for 0.75s, then stab forward for <b>${50 + 40 * r} (+100% AD)</b> physical damage. If you parried an attack, enemies hit are <b>stunned</b> for 1.25s; otherwise slowed.`,
       cast(p, tx, ty, r) {
         p.parry = 0.75; p.parried = false; p.parryAng = Math.atan2(ty - p.y, tx - p.x); p.parryR = r;

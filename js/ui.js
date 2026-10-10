@@ -10,8 +10,8 @@ function screen(html, cls = '') {
 function closeScreen() { $('screen').className = 'hidden'; $('screen').innerHTML = ''; hideTip(); }
 const btn = (label, act, arg = '', cls = '') => `<button class="btn ${cls}" data-act="${act}" data-arg="${arg}">${label}</button>`;
 function spriteImg(sprKey, scale) {
-  const f = SPR[sprKey].frames[0].r;
-  return `<img class="pix" src="${f.toDataURL()}" style="width:${f.width * scale}px;height:${f.height * scale}px">`;
+  const spr = SPR[sprKey];
+  return `<img class="pix" src="${spr.portrait}" style="width:${spr.w * scale}px;height:${spr.h * scale}px">`;
 }
 
 // ---- title ----
@@ -20,7 +20,7 @@ function showTitle() {
   screen(`<div class="title">
     <div class="logo">PIXEL LEAGUE</div><div class="sublogo">The Silverfield Outskirts</div>
     <div class="heroes">${HEROES.map(h => spriteImg(h.spr, 4)).join('')}</div>
-    <div class="menu">${btn('▶ New Run', 'select')}${btn(`🛡️ Armory <small>(${m.shards} shards)</small>`, 'armory')}${btn('❔ How to Play', 'help')}</div>
+    <div class="menu">${btn(`${iconMarkup('▶')} New Run`, 'select')}${btn(`${iconMarkup('🛡️')} Armory <small>(${m.shards} shards)</small>`, 'armory')}${btn(`${iconMarkup('⚙')} Settings`, 'settings')}${btn(`${iconMarkup('❔')} How to Play`, 'help')}</div>
     <div class="foot">Runs ${m.runs} · Victories ${m.wins} · Best stage ${Math.min(m.best || 0, STAGES.length)}${m.wins ? ' ★' : ''}</div>
   </div>`, 'full');
 }
@@ -52,8 +52,8 @@ function showSelect() {
       <div class="hname">${h.name}</div><div class="htitle">${h.title}</div><div class="hrole">${h.role}</div>
       <div class="hstats"><span>Health</span>${bar(h.base.hp, 750)}<span>Attack</span>${bar(h.base.ad, 70)}
         <span>Range</span>${bar(h.base.range, 5.5)}<span>Speed</span>${bar(h.base.ms, 3.4)}</div>
-      <div class="hpass" data-tip="${h.passive.desc.replace(/"/g, '&quot;')}">${h.passive.icon} ${h.passive.name}</div>
-      <div class="hskills">${['Q', 'W', 'E', 'R'].map(k => `<span data-tip="<div class='tt-title'>${h.skills[k].icon} ${h.skills[k].name} [${k}]</div><div class='tt-desc'>${h.skills[k].desc(1).replace(/"/g, '&quot;')}</div>">${h.skills[k].icon}</span>`).join('')}</div>
+      <div class="hpass" data-tip="${h.passive.desc.replace(/"/g, '&quot;')}">${iconMarkup(h.passive.icon)} ${h.passive.name}</div>
+      <div class="hskills">${['Q', 'W', 'E', 'R'].map(k => `<span data-tip="<div class='tt-title'>${iconMarkup(h.skills[k].icon)} ${h.skills[k].name} [${k}]</div><div class='tt-desc'>${h.skills[k].desc(1).replace(/"/g, '&quot;')}</div>">${iconMarkup(h.skills[k].icon)}</span>`).join('')}</div>
     </div>`).join('')}</div>${btn('Back', 'title')}</div>`, 'full');
 }
 
@@ -65,7 +65,7 @@ function openCards(onDone) {
 function cardHTML(c, i) {
   const col = CARD_COL[c.rar] || CARD_COL.common, tag = c.kind === 'extra' ? 'Bonus Skill' : c.id[1] === '_' ? 'Champion' : c.rar;
   return `<div class="card rar-${c.rar}" style="--cc:${col}" data-act="card" data-arg="${i}">
-    <div class="ckey">${i + 1}</div><div class="cicon">${c.icon}</div><div class="cname">${c.name}</div>
+    <div class="ckey">${i + 1}</div><div class="cicon">${iconMarkup(c.icon)}</div><div class="cname">${c.name}</div>
     <div class="crar">${tag}</div><div class="cdesc">${cardDesc(c)}</div></div>`;
 }
 function renderCards() {
@@ -73,7 +73,7 @@ function renderCards() {
   screen(`<div class="cards-wrap"><h2>Level ${p.level - R.pendingCards + 1} — Choose a Talent</h2>
     <div class="sub">${R.pendingCards > 1 ? `${R.pendingCards} picks pending · ` : ''}${p.skillPts > 0 ? `${p.skillPts} skill point${p.skillPts > 1 ? 's' : ''} to spend (Shift+Q/W/E/R)` : ''}</div>
     <div class="cards">${UI.cards.map(cardHTML).join('')}</div>
-    <div class="row">${btn(`🎲 Reroll (${R.rerolls}) [T]`, 'reroll', '', R.rerolls > 0 ? '' : 'off')}</div></div>`, 'dim');
+    <div class="row">${btn(`${iconMarkup('🎲')} Reroll (${R.rerolls}) [T]`, 'reroll', '', R.rerolls > 0 ? '' : 'off')}</div></div>`, 'dim');
 }
 function pickCard(i) {
   const c = UI.cards && UI.cards[i]; if (!c) return;
@@ -99,45 +99,55 @@ const shopPrice = it => Math.round(it.value * 2.2);
 const wisdomCost = () => 60 + 40 * G.run.stage;
 function renderCamp() {
   G.state = 'camp'; const p = G.player, R = G.run, full = p.items.length >= 6;
-  screen(`<div class="panel camp"><h2>🔥 Camp — next: ${BIOMES[STAGES[R.stage].biome].name}</h2>
+  screen(`<div class="panel camp"><h2>${iconMarkup('🔥')} Camp — next: ${BIOMES[STAGES[R.stage].biome].name}</h2>
     <div class="sub">You rest by the fire. Health and mana restored. Gold: <b class="gold">${R.gold}</b></div>
     <div class="shop">${UI.shop.map((it, i) => it ? `<div class="sitem" style="--rc:${RARITY[it.rarity].col}">
-      <div class="sicon">${it.icon}</div><div class="sinfo">${itemHTML(it).replace(/<div class="tt-val">.*?<\/div>/, '')}</div>
+      <div class="sicon">${iconMarkup(it.icon)}</div><div class="sinfo">${itemHTML(it).replace(/<div class="tt-val">.*?<\/div>/, '')}</div>
       ${btn(`${shopPrice(it)}g`, 'buy', i, R.gold >= shopPrice(it) && !full ? '' : 'off')}</div>` : '<div class="sitem sold">SOLD</div>').join('')}</div>
     ${full ? '<div class="warn">Inventory full — right-click an item below to sell it.</div>' : ''}
-    <div class="campinv">${p.items.map((it, i) => `<div class="islot" style="border-color:${RARITY[it.rarity].col}" data-act="sell" data-arg="${i}" data-tip="${(itemHTML(it) + '<div class=tt-sub>Click to sell</div>').replace(/"/g, '&quot;')}">${it.icon}</div>`).join('')}</div>
-    <div class="row">${btn(`🎲 Reroll shop (${UI.rerollCost}g)`, 'shopReroll', '', R.gold >= UI.rerollCost ? '' : 'off')}
-      ${btn(`📜 Seek Wisdom (${wisdomCost()}g)`, 'wisdom', '', !UI.wisdom && R.gold >= wisdomCost() ? '' : 'off')}
-      ${btn('Continue ▶', 'nextStage', '', 'go')}</div></div>`, 'dim');
+    <div class="campinv">${p.items.map((it, i) => `<div class="islot" style="border-color:${RARITY[it.rarity].col}" data-act="sell" data-arg="${i}" data-tip="${(itemHTML(it) + '<div class=tt-sub>Click to sell</div>').replace(/"/g, '&quot;')}">${iconMarkup(it.icon)}</div>`).join('')}</div>
+    <div class="row">${btn(`${iconMarkup('🎲')} Reroll shop (${UI.rerollCost}g)`, 'shopReroll', '', R.gold >= UI.rerollCost ? '' : 'off')}
+      ${btn(`${iconMarkup('📜')} Seek Wisdom (${wisdomCost()}g)`, 'wisdom', '', !UI.wisdom && R.gold >= wisdomCost() ? '' : 'off')}
+      ${btn(`${iconMarkup('▶')} Continue`, 'nextStage', '', 'go')}</div></div>`, 'dim');
 }
 
 // ---- pause / results / armory ----
 function showPause(force) {
   if (G.state !== 'play' && !force) return; G.state = 'pause';
-  screen(`<div class="panel pause"><h2>Paused</h2>${btn('Resume [Esc]', 'resume', '', 'go')}${btn('How to Play', 'helpPause')}${btn('Abandon Run', 'abandon', '', 'bad')}</div>`, 'dim');
+  screen(`<div class="panel pause"><h2>Paused</h2>${btn('Resume [Esc]', 'resume', '', 'go')}${btn('Settings', 'pauseSettings')}${btn('How to Play', 'helpPause')}${btn('Abandon Run', 'abandon', '', 'bad')}</div>`, 'dim');
 }
 function resume() { closeScreen(); G.state = 'play'; }
+function showSettings(back = 'title') {
+  const backAction = back === 'pause' ? 'pauseBack' : 'title';
+  screen(`<div class="panel settings"><h2>Settings</h2>
+    <div class="setting-row"><div class="setting-name">Skill casting</div><div class="setting-options">
+      <button class="setting-option ${SETTINGS.castMode === 'smart' ? 'selected' : ''}" data-act="castMode" data-arg="smart">Smart cast</button>
+      <button class="setting-option ${SETTINGS.castMode === 'indicator' ? 'selected' : ''}" data-act="castMode" data-arg="indicator">Indicator mode</button>
+    </div></div>
+    <div class="setting-note">Indicator mode: press Q/W/E/R, then left-click to cast. Esc or right-click cancels.</div>
+    ${btn('Back', backAction)}</div>`, back === 'pause' ? 'dim' : 'full');
+}
 function endRun(win) {
   if (UI.ended) return; UI.ended = true;
   G.state = 'over'; const R = G.run, p = G.player, aw = awardShards(win);
   showHUD(false);
   const stat = (k, v) => `<div><span>${k}</span><b>${v}</b></div>`;
   screen(`<div class="panel results ${win ? 'win' : 'lose'}">
-    <h2>${win ? '🏆 Demacia Stands!' : '☠️ Defeated'}</h2>
+    <h2>${win ? `${iconMarkup('🏆')} Demacia Stands!` : `${iconMarkup('☠️')} Defeated`}</h2>
     <div class="sub">${win ? 'All champions of the outskirts have fallen.' : `Fell in ${BIOMES[STAGES[R.stage - 1].biome].name}, wave ${R.wave}.`}</div>
     <div class="rstats">${stat('Champion', p.hero.name)}${stat('Level', p.level)}${stat('Time', fmtT(R.time))}
       ${stat('Kills', R.kills)}${stat('Champions slain', R.bossKills)}${stat('Gold', R.gold)}</div>
-    <div class="ritems">${p.items.map(it => `<span style="border-color:${RARITY[it.rarity].col}">${it.icon}</span>`).join('')}</div>
+    <div class="ritems">${p.items.map(it => `<span style="border-color:${RARITY[it.rarity].col}">${iconMarkup(it.icon)}</span>`).join('')}</div>
     <div class="shards">${aw.parts.map(([k, v]) => `<div><span>${k}</span><b>+${v}</b></div>`).join('')}
       <div class="tot"><span>Petricite Shards earned</span><b>+${aw.total}</b></div></div>
     <div class="row">${btn('▶ Play Again', 'select', '', 'go')}${btn(`🛡️ Armory (${aw.shards})`, 'armory')}${btn('Title', 'title')}</div></div>`, 'dim');
 }
 function showArmory() {
   const m = loadMeta(); G.state = 'armory';
-  screen(`<div class="panel armory"><h2>🛡️ The Armory</h2><div class="sub">Spend Petricite Shards on permanent upgrades. You have <b class="gold">${m.shards}</b>.</div>
+  screen(`<div class="panel armory"><h2>${iconMarkup('🛡️')} The Armory</h2><div class="sub">Spend Petricite Shards on permanent upgrades. You have <b class="gold">${m.shards}</b>.</div>
     <div class="ups">${META_UP.map(u => {
       const n = m.up[u.id] || 0, c = metaCost(u, n), maxed = n >= u.max;
-      return `<div class="up"><div class="uicon">${u.icon}</div><div class="uname">${u.name}</div>
+      return `<div class="up"><div class="uicon">${iconMarkup(u.icon)}</div><div class="uname">${u.name}</div>
         <div class="upips">${'<i class="on"></i>'.repeat(n)}${'<i></i>'.repeat(u.max - n)}</div>
         <div class="udesc">${u.desc(Math.max(1, n))}${n ? '' : ' (at rank 1)'}</div>
         ${maxed ? '<div class="umax">MAX</div>' : btn(`${c} ◆`, 'buyMeta', u.id, m.shards >= c ? '' : 'off')}</div>`;
@@ -147,6 +157,12 @@ function showArmory() {
 // ---- button actions + keyboard for UI states ----
 const UI_ACT = {
   title: showTitle, select: showSelect, help: () => showHelp(), armory: showArmory,
+  settings: () => showSettings(G.state === 'pause' ? 'pause' : 'title'), pauseSettings: () => showSettings('pause'),
+  castMode: mode => {
+    SETTINGS.castMode = mode === 'indicator' ? 'indicator' : 'smart'; saveSettings();
+    if (G.player) G.player.aimSkill = null;
+    showSettings(G.state === 'pause' ? 'pause' : 'title');
+  },
   helpPause: () => showHelp('pauseBack'), pauseBack: () => showPause(true),
   pick: i => { UI.ended = false; closeScreen(); startRun(HEROES[+i]); },
   card: i => pickCard(+i), reroll: rerollCards, resume,

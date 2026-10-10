@@ -30,6 +30,8 @@ const I18N = (() => {
     'Next rank at level': '下一级需要等级', 'Camera locked': '镜头已锁定', 'Camera free': '镜头已解锁',
     'Inventory full (right-click item to sell)': '背包已满（右键物品出售）', 'No target': '没有目标',
     'Not learned': '尚未学习', 'No mana': '法力不足', 'PARRY': '格挡', 'MISS': '未命中', 'REVIVED': '复活',
+    'Settings': '设置', 'Skill casting': '技能施法方式', 'Smart cast': '智能施法', 'Indicator mode': '指示模式',
+    'Indicator mode: press Q/W/E/R, then left-click to cast. Esc or right-click cancels.': '指示模式：按 Q/W/E/R 后显示范围，鼠标左键施法；Esc 或右键取消。',
     'Stop': '停止', 'Pause': '暂停', 'S': '停止', 'Esc': '暂停', 'Space': '空格',
     'A + Left-click': 'A + 鼠标左键', 'Shift + Q/W/E/R': 'Shift + Q/W/E/R', 'D / F': 'D / F', 'Space / Y': '空格 / Y',
     'Champion Defeated!': '冠军已击败！', 'Step into the light to claim victory': '踏入光芒，赢得最终胜利',

@@ -13,6 +13,7 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); c
 #langToggle:hover { border-color: var(--gold); color: var(--txt); }
 b { color: var(--gold); font-weight: normal; }
 .pix { image-rendering: pixelated; }
+.game-icon { display: inline-block; width: 1em; height: 1em; vertical-align: -0.14em; overflow: visible; }
 
 /* ---- HUD frame ---- */
 #hud { position: fixed; inset: 0; pointer-events: none; }
@@ -46,7 +47,7 @@ b { color: var(--gold); font-weight: normal; }
   background: var(--panel); border: 2px solid var(--gold2); box-shadow: 0 0 0 2px #05060c, 0 4px 18px rgba(0, 0, 0, 0.6); }
 #portrait { position: relative; }
 #heroIcon { width: 72px; height: 72px; border: 3px solid var(--gold); background: radial-gradient(#2a3456, #10141f); overflow: hidden; }
-#heroIcon canvas { width: 100%; height: 100%; image-rendering: pixelated; display: block; }
+#heroIcon canvas, #heroIcon img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: cover; display: block; }
 #lvl { position: absolute; left: 50%; bottom: -10px; transform: translateX(-50%); min-width: 30px; padding: 0 5px; text-align: center;
   font-family: var(--pix); font-size: 11px; line-height: 20px; background: #10141f; border: 2px solid var(--gold); white-space: nowrap; }
 #lvl .pts { color: #70ff90; margin-left: 4px; animation: blink 0.8s steps(2) infinite; }
@@ -183,6 +184,15 @@ h2 { font-family: var(--pix); font-size: 18px; color: var(--gold); text-shadow: 
 /* pause */
 .pause { min-width: 320px; }
 .pause .btn { width: 100%; }
+.settings { min-width: min(440px, 94vw); }
+.setting-row { width: 100%; display: grid; gap: 8px; }
+.setting-name { color: var(--gold); }
+.setting-options { display: grid; grid-template-columns: 1fr 1fr; border: 2px solid var(--edge); background: #10121c; }
+.setting-option { min-height: 44px; padding: 6px 10px; color: var(--dim); font: 18px var(--mono); background: transparent; border: 0; cursor: pointer; }
+.setting-option + .setting-option { border-left: 2px solid var(--edge); }
+.setting-option.selected { color: var(--txt); background: #2a3458; box-shadow: inset 0 -3px var(--gold); }
+.setting-option:hover { color: var(--gold); }
+.setting-note { color: var(--dim); text-align: center; max-width: 360px; }
 
 /* results */
 .results.win h2 { color: #ffd040; }

@@ -7,7 +7,7 @@ const HERO_KESTREL = {
   grow: { hp: 90, mp: 25, ad: 3.2, armor: 3.5, mr: 1.4, as: 3.0, regen: 0.15, mregen: 0.15 },
   passive: { name: 'Harrier', icon: '🦅', desc: 'Your hawk periodically marks the nearest enemy as <b>Vulnerable</b>. Attacking a Vulnerable enemy deals bonus physical damage and consumes the mark.' },
   skills: {
-    Q: { name: 'Blinding Assault', icon: '🎯', cd: [10, 9, 8, 7, 6], cost: [50, 55, 60, 65, 70], range: 8, aim: 'point',
+    Q: { name: 'Blinding Assault', icon: '🎯', cd: [10, 9, 8, 7, 6], cost: [50, 55, 60, 65, 70], range: 8, area: 1.5, aim: 'point',
       desc: r => `Fire an arrow that explodes on the first enemy hit, dealing <b>${30 + 45 * r} (+90% AD)</b> physical damage around it and <b>blinding</b> enemies for 1.5s (their attacks miss).`,
       cast(p, tx, ty, r) {
         const a0 = Math.atan2(ty - p.y, tx - p.x), angs = p.taken.k_twin ? [a0 - 0.28, a0, a0 + 0.28] : [a0];
@@ -16,7 +16,7 @@ const HERO_KESTREL = {
           discFx(t.x, t.y, 1.5, '#ffe070', 0.3); burst(t.x, t.y, ['#ffe070', '#ffffff'], 12, 3, 8, 0.4);
         }, { size: 3, trail: true });
       } },
-    W: { name: 'Heightened Senses', icon: '👁️', cd: [16, 15, 14, 13, 12], cost: [40, 40, 40, 40, 40], aim: 'self',
+    W: { name: 'Heightened Senses', icon: '👁️', cd: [16, 15, 14, 13, 12], cost: [40, 40, 40, 40, 40], area: 7, aim: 'self',
       desc: r => `Passive: consuming Vulnerable grants <b>${20 + 8 * r}%</b> attack speed and 15% move speed for 2s.<br>Active: mark the <b>${2 + r}</b> nearest enemies as Vulnerable and gain ${30 + 10 * r}% attack speed for 4s.`,
       cast(p, tx, ty, r) {
         const near = G.enemies.filter(e => e.alive && dist(p, e) < 7).sort((a, b) => dist(p, a) - dist(p, b)).slice(0, 2 + r);
@@ -36,7 +36,7 @@ const HERO_KESTREL = {
           p.dashTo(p.x + Math.cos(a) * 2.2, p.y + Math.sin(a) * 2.2, 10);
         }, 0.6);
       } },
-    R: { name: 'Skystrike', icon: '🌅', cd: [60, 50, 40], cost: [100, 100, 100], aim: 'self',
+    R: { name: 'Skystrike', icon: '🌅', cd: [60, 50, 40], cost: [100, 100, 100], area: 2.8, aim: 'self',
       desc: r => `Your hawk lifts you up: gain <b>${50 + 20 * r}%</b> move speed for 6s. When it ends, strike all nearby enemies for <b>${120 + 100 * r} (+70% AD)</b> physical damage.`,
       cast(p, tx, ty, r) { p.addBuff('sky', 6, { ms: 50 + 20 * r }); p.sky = 6; p.skyR = r; ringFx(p.x, p.y, 1.5, '#ffe070', 0.5); } },
   },

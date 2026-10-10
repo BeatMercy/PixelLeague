@@ -1,6 +1,14 @@
 'use strict';
 // ---------- Main loop, input routing, camera ----------
 const IN = { amove: false, rmbT: 0, last: 0, err: null };
+const SETTINGS_KEY = 'pixelLeague.settings.v1';
+const SETTINGS = (() => {
+  try { return Object.assign({ castMode: 'smart' }, JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}')); }
+  catch (e) { return { castMode: 'smart' }; }
+})();
+function saveSettings() {
+  try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(SETTINGS)); } catch (e) { /* storage blocked */ }
+}
 
 // A drifting, empty world behind the menus
 function initBackdrop() {
@@ -78,9 +86,12 @@ G.onMouseDown = e => {
   const p = G.player; if (!p.alive) return;
   updateMouseWorld(); updateHover();
   if (e.button === 2) {
+    p.aimSkill = null;
     IN.amove = false; IN.rmbT = 0.18;
     if (G.hoverEnemy) { p.attackUnit(G.hoverEnemy); G.moveMark = { x: G.hoverEnemy.x, y: G.hoverEnemy.y, t: 0.4, col: '#ff4040' }; }
     else { p.moveTo(mouse.wx, mouse.wy); G.moveMark = { x: mouse.wx, y: mouse.wy, t: 0.5, col: '#60ff60' }; }
+  } else if (e.button === 0 && p.aimSkill) {
+    p.cast(p.aimSkill, true);
   } else if (e.button === 0 && IN.amove) {
     IN.amove = false;
     if (G.hoverEnemy) p.attackUnit(G.hoverEnemy); else p.attackMove(mouse.wx, mouse.wy);
@@ -90,7 +101,7 @@ G.onMouseDown = e => {
 G.onKeyDown = e => {
   if (G.state !== 'play') return uiKey(e);
   const p = G.player, c = e.code;
-  if (c === 'Escape') { if (IN.amove) IN.amove = false; else showPause(); return; }
+  if (c === 'Escape') { if (p.aimSkill) p.aimSkill = null; else if (IN.amove) IN.amove = false; else showPause(); return; }
   if (!p.alive) return;
   updateMouseWorld(); updateHover();
   const k = { KeyQ: 'Q', KeyW: 'W', KeyE: 'E', KeyR: 'R' }[c];
@@ -121,7 +132,7 @@ function frame(now) {
     const menu = st === 'title' || st === 'select' || st === 'armory';
     if (st === 'play' || menu) G.time += dt; else updateHUD(0);
     if (G.map) renderWorld();
-    canvas.style.cursor = st !== 'play' ? 'default' : IN.amove ? 'crosshair' : G.hoverEnemy ? 'pointer' : 'default';
+    canvas.style.cursor = st !== 'play' ? 'default' : G.player.aimSkill || IN.amove ? 'crosshair' : G.hoverEnemy ? 'pointer' : 'default';
     IN.err = null;
   } catch (err) {
     if (!IN.err) { console.error(err); IN.err = err; }
@@ -129,8 +140,8 @@ function frame(now) {
   }
   requestAnimationFrame(frame);
 }
-function boot() {
-  buildAllSprites();
+async function boot() {
+  await buildAllSprites();
   showTitle();
   requestAnimationFrame(frame);
 }

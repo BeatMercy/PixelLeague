@@ -64,7 +64,7 @@ function rollItem(src, stage) {
 function statLine(k, v) { const [n, suf] = STAT_INFO[k] || [k, '']; return `+${v}${suf} ${n}`; }
 function itemHTML(it) {
   const r = RARITY[it.rarity];
-  let h = `<div class="tt-title" style="color:${r.col}">${it.icon} ${it.name}</div><div class="tt-sub">${r.name}</div>`;
+  let h = `<div class="tt-title" style="color:${r.col}">${iconMarkup(it.icon)} ${it.name}</div><div class="tt-sub">${r.name}</div>`;
   for (const k in it.stats) h += `<div class="tt-stat">${statLine(k, it.stats[k])}</div>`;
   if (it.desc) h += `<div class="tt-desc">${it.desc}</div>`;
   return h + `<div class="tt-val">Sell: ${it.value} gold</div>`;

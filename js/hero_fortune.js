@@ -36,7 +36,7 @@ const HERO_FORTUNE = {
         p.atkCd = Math.min(p.atkCd, 0.08);
         ringFx(p.x, p.y, 0.75, '#ffd070', 0.35); burst(p.x, p.y, '#ffd070', 8, 1.8, 10, 0.35);
       } },
-    E: { name: 'Bullet Rain', icon: '💥', cd: [16, 15, 14, 13, 12], cost: [55, 60, 65, 70, 75], range: 7, aim: 'point',
+    E: { name: 'Bullet Rain', icon: '💥', cd: [16, 15, 14, 13, 12], cost: [55, 60, 65, 70, 75], range: 7, area: 1.9, aim: 'point',
       desc: r => fortuneText(`Bombard an area for 2.5s, slowing enemies by <b>30%</b> and dealing <b>${14 + 8 * r} (+18% AD)</b> physical damage every 0.5s.`, `轰击一片区域，持续 2.5 秒。敌人被减速 <b>30%</b>，每 0.5 秒受到 <b>${14 + 8 * r}（+18% 攻击力）</b>物理伤害。`),
       cast(p, tx, ty, r) {
         const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy), range = 7;
@@ -54,7 +54,7 @@ const HERO_FORTUNE = {
         } });
         ringFx(tx, ty, radius, '#ffb060', 0.35); discFx(tx, ty, radius, '#e0783038', 2.5);
       } },
-    R: { name: 'Full Salvo', icon: '🔫', cd: [75, 62, 50], cost: [100, 100, 100], aim: 'self',
+    R: { name: 'Full Salvo', icon: '🔫', cd: [75, 62, 50], cost: [100, 100, 100], range: 8.5, aim: 'self',
       desc: r => fortuneText(`Fire a broad cone of bullets. Each hit deals <b>${18 + 12 * r} (+18% AD)</b> physical damage; bullets pierce through enemies.`, `朝前方扇形区域倾泻弹幕。每次命中造成 <b>${18 + 12 * r}（+18% 攻击力）</b>物理伤害，子弹可穿透敌人。`),
       cast(p, tx, ty, r) {
         const angle = Math.atan2(ty - p.y, tx - p.x), count = 9 + 2 * r + (p.taken.m_barrage ? 4 : 0), spread = 0.88;

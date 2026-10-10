@@ -28,7 +28,7 @@ function refreshTip() { if (tipFn) showTip(tipFn(), mouse.sx, mouse.sy); }
 // ---- tooltip content ----
 function skillTip(k) {
   const p = G.player, sk = p.hero.skills[k], r = p.ranks[k], rr = Math.max(1, r), max = k === 'R' ? 3 : 5;
-  let h = `<div class="tt-title">${sk.icon} ${sk.name} <span class="tt-key">[${k}]</span></div><div class="tt-sub">Rank ${r} / ${max}</div>`;
+  let h = `<div class="tt-title">${iconMarkup(sk.icon)} ${sk.name} <span class="tt-key">[${k}]</span></div><div class="tt-sub">Rank ${r} / ${max}</div>`;
   h += `<div class="tt-desc">${sk.desc(rr)}</div>`;
   const cd = (sk.cd[rr - 1] * 100 / (100 + p.st.haste)).toFixed(1);
   h += `<div class="tt-stat">Cooldown ${cd}s${p.hero.manaless ? '' : ` · Cost ${sk.cost[rr - 1]} mana`}</div>`;
@@ -36,15 +36,15 @@ function skillTip(k) {
   else if (r < max) h += `<div class="tt-sub">Next rank at level ${k === 'R' ? [6, 11, 16][r] : 2 * r + 1}</div>`;
   return h;
 }
-const passiveTip = () => { const P = G.player.hero.passive; return `<div class="tt-title">${P.icon} ${P.name}</div><div class="tt-sub">Passive</div><div class="tt-desc">${P.desc}</div>`; };
-const summTip = k => { const s = SUMMONERS[k]; return `<div class="tt-title">${s.icon} ${s.name} <span class="tt-key">[${k}]</span></div><div class="tt-desc">${s.desc}</div><div class="tt-stat">Cooldown ${s.cd}s</div>`; };
+const passiveTip = () => { const P = G.player.hero.passive; return `<div class="tt-title">${iconMarkup(P.icon)} ${P.name}</div><div class="tt-sub">Passive</div><div class="tt-desc">${P.desc}</div>`; };
+const summTip = k => { const s = SUMMONERS[k]; return `<div class="tt-title">${iconMarkup(s.icon)} ${s.name} <span class="tt-key">[${k}]</span></div><div class="tt-desc">${s.desc}</div><div class="tt-stat">Cooldown ${s.cd}s</div>`; };
 const itemTip = i => { const it = G.player.items[i]; return it ? itemHTML(it) + '<div class="tt-sub">Right-click: sell · Shift+click: drop</div>' : ''; };
-const extraTip = k => { const E = EXTRAS[k], lv = G.player.extras[k]; return `<div class="tt-title" style="color:${CARD_COL.skill}">${E.icon} ${E.name}</div><div class="tt-sub">Level ${lv} / 5 · auto-cast</div><div class="tt-desc">${E.desc(lv)}</div>`; };
+const extraTip = k => { const E = EXTRAS[k], lv = G.player.extras[k]; return `<div class="tt-title" style="color:${CARD_COL.skill}">${iconMarkup(E.icon)} ${E.name}</div><div class="tt-sub">Level ${lv} / 5 · auto-cast</div><div class="tt-desc">${E.desc(lv)}</div>`; };
 
 // ---- build ----
 function mkSlot(parent, icon, key, cls = '') {
   const s = document.createElement('div'); s.className = 'slot ' + cls;
-  s.innerHTML = `<div class="ic">${icon}</div><div class="cd"></div><div class="cd-mask"><div class="cd-hand"></div></div><div class="cdt"></div><div class="key">${key}</div>`;
+  s.innerHTML = `<div class="ic">${iconMarkup(icon)}</div><div class="cd"></div><div class="cd-mask"><div class="cd-hand"></div></div><div class="cdt"></div><div class="key">${key}</div>`;
   parent.appendChild(s);
   return { el: s, cd: s.querySelector('.cd'), mask: s.querySelector('.cd-mask'), hand: s.querySelector('.cd-hand'), cdt: s.querySelector('.cdt') };
 }
@@ -60,11 +60,10 @@ function buildHUD() {
   }
   const gap = document.createElement('div'); gap.className = 'gap'; sk.appendChild(gap);
   for (const k of ['D', 'F']) { const s = mkSlot(sk, SUMMONERS[k].icon, k, 'summ'); bindTip(s.el, () => summTip(k)); HUD.slots[k] = s; }
-  // portrait: crop the head of the idle frame
+  // Portraits are standalone SVG assets.
   const hi = $('heroIcon'); hi.innerHTML = '';
-  const c = mkCanvas(16, 16), f = p.spr.frames[0].r, sc = p.spr.s || 1;
-  c.getContext('2d').drawImage(f, Math.round(4 * sc), 0, Math.round(16 * sc), Math.round(16 * sc), 0, 0, 16, 16);
-  hi.appendChild(c); hi.style.borderColor = p.hero.color;
+  const portrait = document.createElement('img'); portrait.src = p.spr.portrait; portrait.alt = '';
+  hi.appendChild(portrait); hi.style.borderColor = p.hero.color;
   // inventory
   const inv = $('inventory'); inv.innerHTML = ''; HUD.inv = [];
   for (let i = 0; i < 6; i++) {
@@ -128,8 +127,8 @@ function updateHUD(dt) {
   const alive = G.enemies.filter(e => e.alive).length;
   setText(el.waveInfo, R.phase === 'break' ? `Next wave in ${Math.ceil(R.waveT)}s` : R.phase === 'wave' ? `Wave ${R.wave}/${S.waves} · ${alive + R.queue.length} foes`
     : R.phase === 'boss' ? 'Champion fight!' : 'Enter the portal');
-  setText(el.goldInfo, `💰 ${fmt(R.gold)}`); setText(el.killInfo, `💀 ${R.kills}`); setText(el.timeInfo, `⏱ ${fmtT(R.time)}`);
-  const st = p.st, row = (ic, n, v) => `<div title="${n}"><span>${ic}</span>${v}</div>`;
+  setHTML(el.goldInfo, `${iconMarkup('💰')} ${fmt(R.gold)}`); setHTML(el.killInfo, `${iconMarkup('💀')} ${R.kills}`); setHTML(el.timeInfo, `${iconMarkup('⏱')} ${fmtT(R.time)}`);
+  const st = p.st, row = (ic, n, v) => `<div title="${n}"><span>${iconMarkup(ic)}</span>${v}</div>`;
   setHTML(el.statsPanel, row('🗡️', 'Attack Damage', Math.round(st.ad)) + row('🔮', 'Ability Power', Math.round(st.ap)) +
     row('🛡️', 'Armor', Math.round(st.armor)) + row('🧿', 'Magic Resist', Math.round(st.mr)) +
     row('🏹', 'Attack Speed', st.as.toFixed(2)) + row('🎯', 'Crit Chance', Math.round(st.crit) + '%') +
@@ -141,7 +140,7 @@ function updateHUD(dt) {
     HUD.invSig = sig;
     HUD.inv.forEach((s, i) => {
       const it = p.items[i];
-      s.innerHTML = it ? `<span>${it.icon}</span>` : ''; s.style.borderColor = it ? RARITY[it.rarity].col : '';
+      s.innerHTML = it ? `<span>${iconMarkup(it.icon)}</span>` : ''; s.style.borderColor = it ? RARITY[it.rarity].col : '';
       s.classList.toggle('leg', !!(it && it.passive));
     });
   }
@@ -150,7 +149,7 @@ function updateHUD(dt) {
     HUD.exSig = xs; const ep = $('extrasPanel'); ep.innerHTML = '';
     for (const k in p.extras) {
       const d = document.createElement('div'); d.className = 'xslot';
-      d.innerHTML = `<span>${EXTRAS[k].icon}</span><b>${p.extras[k]}</b>`; bindTip(d, () => extraTip(k)); ep.appendChild(d);
+      d.innerHTML = `<span>${iconMarkup(EXTRAS[k].icon)}</span><b>${p.extras[k]}</b>`; bindTip(d, () => extraTip(k)); ep.appendChild(d);
     }
   }
 }

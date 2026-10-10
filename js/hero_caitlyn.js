@@ -20,7 +20,7 @@ const HERO_CAITLYN = {
           burst(target.x, target.y, ['#d8e8f0', '#ffffff'], 5, 1.6, 8, 0.25);
         }, { size: 3, pierce: 5, trail: true });
       } },
-    W: { name: 'Yordle Snap Trap', icon: '🪤', cd: [18, 17, 16, 15, 14], cost: [45, 50, 55, 60, 65], range: 6, aim: 'point',
+    W: { name: 'Yordle Snap Trap', icon: '🪤', cd: [18, 17, 16, 15, 14], cost: [45, 50, 55, 60, 65], range: 6, area: 0.65, aim: 'point',
       desc: r => caitlynText(`Place a trap for 8s. The first enemy to enter is rooted for ${1 + 0.2 * r}s, revealed, and takes <b>${35 + 25 * r} (+55% AD)</b> physical damage.`, `放置持续 8 秒的陷阱。首个踏入的敌人被定身 ${1 + 0.2 * r} 秒、显形，并受到 <b>${35 + 25 * r}（+55% 攻击力）</b>物理伤害。`),
       cast(p, tx, ty, r) {
         const dx = tx - p.x, dy = ty - p.y, distance = Math.hypot(dx, dy), range = 6;

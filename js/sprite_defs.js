@@ -77,13 +77,27 @@ const SPRITE_CFG = {
   b_champ: { type: 'h', s: 1.6, skin: '#9098a8', head: 'helm', helm: '#3a3a4a', plume: '#40ffb0', body: '#2a2a3a', legs: '#1a1a2a', boots: '#101018', trim: '#40ffb0', cape: '#1a3a30', weapon: 'sword', wcol: '#60ffc0', bulk: 1, shield: '#2a2a3a' },
 };
 const SPR = {};
-function buildAllSprites() {
-  for (const k in SPRITE_CFG) {
-    const c = SPRITE_CFG[k], s = c.s || 1;
-    if (c.type === 'h') SPR[k] = buildSprite(32, 26, 12, 25, (x, f) => drawHumanoid(x, f, c), s);
-    else if (c.type === 'q') SPR[k] = buildSprite(30, 18, 14, 17, (x, f) => drawQuad(x, f, c), s);
-    else if (c.type === 'g') SPR[k] = buildSprite(30, 30, 15, 29, (x, f) => drawGolem(x, f, c), s);
-    else if (c.type === 'w') SPR[k] = buildSprite(20, 22, 10, 21, (x, f) => drawWisp(x, f, c), s);
-    else SPR[k] = buildSprite(28, 18, 13, 17, (x, f) => drawCannon(x, f, c), s);
-  }
+const SPRITE_SIZE = {
+  h: { w: 32, h: 26, ax: 12, ay: 25 }, q: { w: 30, h: 18, ax: 14, ay: 17 },
+  g: { w: 30, h: 30, ax: 15, ay: 29 }, w: { w: 20, h: 22, ax: 10, ay: 21 },
+  c: { w: 28, h: 18, ax: 13, ay: 17 },
+};
+function loadSpriteFrame(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error(`Unable to load character asset: ${src}`));
+    image.src = src;
+  });
+}
+async function buildAllSprites() {
+  await Promise.all(Object.entries(SPRITE_CFG).map(async ([key, config]) => {
+    const size = SPRITE_SIZE[config.type], scale = config.s || 1, base = `assets/character/${key}/`;
+    const frames = await Promise.all(['idle', 'walk-a', 'walk-b', 'attack'].map(async name => ({ r: await loadSpriteFrame(`${base}${name}.svg`) })));
+    SPR[key] = {
+      frames, ax: Math.round(size.ax * scale), ay: Math.round(size.ay * scale),
+      w: Math.round(size.w * scale), h: Math.round(size.h * scale), s: scale,
+      portrait: `${base}portrait.svg`,
+    };
+  }));
 }

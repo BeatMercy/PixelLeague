@@ -87,17 +87,20 @@ class Player extends Unit {
     this.followPath(dt);
   }
   // ---- skills ----
-  cast(k) {
+  cast(k, confirmAim = false) {
+    if (!confirmAim && this.aimSkill === k) { this.aimSkill = null; return; }
     const sk = this.hero.skills[k], r = this.ranks[k];
     if (!r) { ftext(this.x, this.y, 'Not learned', '#aaa'); return; }
     if (this.cd[k] > 0 || this.stun > 0 || this.silence > 0 || this.dash || this.channel > 0) return;
     if (this.hero.canAct && !this.hero.canAct(this)) return;
     const cost = this.hero.manaless ? 0 : sk.cost[r - 1];
     if (this.mp < cost) { ftext(this.x, this.y, 'No mana', '#60a0ff'); return; }
+    if (!confirmAim && SETTINGS.castMode === 'indicator') { this.aimSkill = k; return; }
     let tx = mouse.wx, ty = mouse.wy;
     if (sk.aim === 'unit' && G.hoverEnemy) { tx = G.hoverEnemy.x; ty = G.hoverEnemy.y; }
     this.cancelWindup(); this.faceTo(tx);
     if (sk.cast(this, tx, ty, r) === false) return;
+    this.aimSkill = null;
     this.mp -= cost; this.cd[k] = this.cdMax[k] = sk.cd[r - 1] * 100 / (100 + this.st.haste);
     if (this.passives.spellblade) this.spellblade = 1;
     if (this.flags.phase) this.addBuff('phase', 2, { ms: 40 });

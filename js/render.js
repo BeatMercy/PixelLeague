@@ -39,6 +39,36 @@ function drawUnit(u) {
   if (u.shield > 0) { ctx.strokeStyle = 'rgba(230,230,255,0.6)'; ctx.beginPath(); ctx.ellipse(vx, vy - u.spr.ay / 2, 9, u.spr.ay / 2 + 2, 0, 0, TAU); ctx.stroke(); }
   if (u === G.player && u.parry > 0) { ctx.strokeStyle = '#ffffff'; ctx.beginPath(); ctx.arc(vx, vy - 12, 12, 0, TAU); ctx.stroke(); }
 }
+function drawSkillAim() {
+  const p = G.player, k = p.aimSkill;
+  if (!k || !p.hero.skills[k]) return;
+  const sk = p.hero.skills[k], mode = sk.aim, range = sk.range || 0;
+  const target = mode === 'unit' && G.hoverEnemy ? G.hoverEnemy : null;
+  let tx = target ? target.x : mouse.wx, ty = target ? target.y : mouse.wy;
+  const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy);
+  if (range > 0 && mode !== 'unit' && d > range) { tx = p.x + dx / d * range; ty = p.y + dy / d * range; }
+  const color = target && d > range ? '#ff6060' : '#80e0ff';
+  ctx.save();
+  if (range > 0) {
+    ctx.globalAlpha = 0.14; ctx.fillStyle = color; isoEllipse(p.x, p.y, range); ctx.fill();
+    ctx.globalAlpha = 0.8; ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([3, 3]); isoEllipse(p.x, p.y, range); ctx.stroke(); ctx.setLineDash([]);
+  }
+  const area = sk.area || 0;
+  if (area > 0) {
+    const ax = mode === 'self' ? p.x : tx, ay = mode === 'self' ? p.y : ty;
+    ctx.globalAlpha = 0.18; ctx.fillStyle = color; isoEllipse(ax, ay, area); ctx.fill();
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = color; ctx.lineWidth = 1; isoEllipse(ax, ay, area); ctx.stroke();
+  }
+  if (mode !== 'self' || range > 0) {
+    const x1 = toVX(p.x, p.y), y1 = toVY(p.x, p.y), x2 = toVX(tx, ty), y2 = toVY(tx, ty);
+    ctx.globalAlpha = 0.75; ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(x2, y2, target ? 7 : 4, 0, TAU); ctx.stroke();
+    if (target) { ctx.beginPath(); ctx.moveTo(x2 - 9, y2); ctx.lineTo(x2 + 9, y2); ctx.moveTo(x2, y2 - 9); ctx.lineTo(x2, y2 + 9); ctx.stroke(); }
+  } else {
+    ctx.globalAlpha = 0.9; ctx.strokeStyle = color; ctx.lineWidth = 1; isoEllipse(p.x, p.y, area || 0.8); ctx.stroke();
+  }
+  ctx.restore();
+}
 function drawDrop(d) {
   const vx = toVX(d.x, d.y), vy = toVY(d.x, d.y, d.z + (d.z <= 0 ? Math.sin(G.time * 4 + d.x) * 1.5 + 1.5 : 0));
   shadow(d.x, d.y, 0.15);
@@ -93,6 +123,7 @@ function renderWorld() {
     isoEllipse(p.x, p.y, (p.st.range || 4.5) * 0.95); ctx.fill(); ctx.stroke();
     ctx.restore();
   }
+  if (p.aimSkill && p.alive) drawSkillAim();
   if (G.moveMark && G.moveMark.t > 0) { ctx.globalAlpha = G.moveMark.t * 2; ctx.strokeStyle = G.moveMark.col; isoEllipse(G.moveMark.x, G.moveMark.y, 0.3 * G.moveMark.t * 2 + 0.1); ctx.stroke(); ctx.globalAlpha = 1; }
   const list = [];
   for (const pr of G.map.props) {

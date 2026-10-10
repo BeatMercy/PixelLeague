@@ -38,12 +38,15 @@ function buildSprite(w, h, ax, ay, draw, s = 1) {
   return { frames, ax: Math.round(ax * s), ay: Math.round(ay * s), w: Math.round(w * s), s };
 }
 function drawSprite(spr, frame, x, y, faceLeft, flash, alpha = 1) {
-  const f = spr.frames[frame];
-  const img = flash ? (faceLeft ? f.wl : f.wr) : (faceLeft ? f.l : f.r);
+  const img = spr.frames[frame].r;
   const ax = faceLeft ? spr.w - spr.ax - Math.round(spr.s) : spr.ax;
+  const dx = Math.round(x - ax), dy = Math.round(y - spr.ay);
+  ctx.save();
   if (alpha !== 1) ctx.globalAlpha = alpha;
-  ctx.drawImage(img, Math.round(x - ax), Math.round(y - spr.ay));
-  if (alpha !== 1) ctx.globalAlpha = 1;
+  if (flash) ctx.filter = 'brightness(0) invert(1)';
+  if (faceLeft) { ctx.translate(dx * 2 + spr.w, 0); ctx.scale(-1, 1); }
+  ctx.drawImage(img, dx, dy);
+  ctx.restore();
 }
 
 // Humanoid: canvas 32x26, feet at (12,25)
