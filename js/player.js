@@ -1,7 +1,7 @@
 'use strict';
 // ---------- Shared skill helpers + the Player ----------
 function aoe(src, x, y, r, dmg, type, o, fn) {
-  const tg = src === G.player ? G.enemies.slice() : [G.player];
+  const tg = src === G.player ? G.enemies.slice() : foesOf(src);
   for (const e of tg) if (e.alive && distXY(x, y, e.x, e.y) < r + e.r) { dealDamage(src, e, dmg, type, o); if (fn) fn(e); }
 }
 function addZone(z) { z.max = z.t; G.zones.push(z); }

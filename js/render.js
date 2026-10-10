@@ -132,6 +132,7 @@ function renderWorld() {
     list.push({ d: pr.x + pr.y, k: 0, o: pr, vx, vy });
   }
   for (const e of G.enemies) if (e.alive) list.push({ d: e.x + e.y, k: 1, o: e });
+  for (const e of G.allies) if (e.alive) list.push({ d: e.x + e.y, k: 1, o: e });
   if (p.alive) list.push({ d: p.x + p.y, k: 1, o: p });
   for (const d of G.drops) list.push({ d: d.x + d.y, k: 2, o: d });
   for (const q of G.projs) list.push({ d: q.x + q.y + 0.5, k: 3, o: q });
@@ -160,6 +161,7 @@ function renderWorld() {
   // upscale + full-res overlays
   sctx.drawImage(view, 0, 0, VW * SCALE, VH * SCALE);
   for (const e of G.enemies) if (e.alive && e.spawnT <= 0 && !e.boss) drawHpBar(e, e.elite ? 22 : 14, '#e03030', e.spr.ay + 4);
+  for (const e of G.allies) if (e.alive && e.spawnT <= 0) drawHpBar(e, 14, '#40a0ff', e.spr.ay + 4);
   if (p.alive) drawHpBar(p, 22, '#40d050', p.spr.ay + 4);
   drawTexts();
 }

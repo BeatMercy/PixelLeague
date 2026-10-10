@@ -14,7 +14,7 @@ function saveSettings() {
 function initBackdrop() {
   const b = pick(Object.keys(BIOMES));
   G.map = genMap(b); G.map.backdrop = true; buildProps(G.map.biome); G.ground = renderGround(G.map); G.minimapBg = null;
-  for (const k of ['enemies', 'projs', 'zones', 'drops', 'fx', 'parts', 'texts', 'timers']) G[k] = [];
+  for (const k of ['enemies', 'allies', 'projs', 'zones', 'drops', 'fx', 'parts', 'texts', 'timers']) G[k] = [];
   G.player = { x: MC, y: MC, alive: false, hp: 1, st: { hp: 1 }, extras: {}, extraState: {} };
   G.run = { portal: null, boss: null };
   G.cam.x = isoX(MC, MC); G.cam.y = isoY(MC, MC);
@@ -52,6 +52,9 @@ function stepPlay(dt) {
     burst(e.x, e.y, [e.boss ? '#ffd040' : '#a02020', '#3a1a1a'], e.boss ? 40 : 8, 2, 8, 0.6);
   }
   G.enemies = G.enemies.filter(e => e.alive);
+  for (const a of G.allies) if (a.alive) a.update(dt);
+  for (const a of G.allies) if (!a.alive && !a.gone) { a.gone = true; burst(a.x, a.y, ['#4080ff', '#1a2a4a'], 8, 2, 8, 0.6); }
+  G.allies = G.allies.filter(a => a.alive);
   tickProjs(dt);
   for (let i = G.zones.length - 1; i >= 0; i--) { const z = G.zones[i]; z.t -= dt; if (z.tick) z.tick(z, dt); if (z.t <= 0) G.zones.splice(i, 1); }
   for (const d of G.drops) {
